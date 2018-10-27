@@ -1,0 +1,8 @@
+.cache
+.coverage
+*.egg-info
+build
+dist
+.vscode
+settings.py
+*.pyc
