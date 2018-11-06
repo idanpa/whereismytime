@@ -25,30 +25,14 @@ class Wmt:
 		self.getconfig()
 		self.getdb()
 
-		# we want always to write to this config
-		# if os.path.exists(config_path):
-		#         config = configparser.ConfigParser()
-		#         config.read(config_path)
-		#         self.db_path = config['Paths']['DataBaseFile']
-		# else:
-		#         self.db_path = os.path.join(wmt_path, 'db.csv')
-		# if not os.path.exists(self.db_path):
-		#         self.create_db()
-		# else:
-		#         self.debug('db already exist in ' + self.db_path)
-
-	def start(self, name, offset):
-		start = datetime.datetime.now()
-		start += datetime.timedelta(minutes = offset)
+	def start(self, name, time):
 		with self.db.open('a') as f:
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
-			writer.writerow({'name': name, 'start': start.strftime(DATETIME_FMT)})
+			writer.writerow({'name': name, 'start': time.strftime(DATETIME_FMT)})
 
-		print(name + ' ' + start.strftime(DATETIME_FMT))
+		print(name + ' ' + time.strftime(DATETIME_FMT))
 
-	def end(self, offset):
-		end = datetime.datetime.now()
-		end += datetime.timedelta(minutes = offset)
+	def end(self, time):
 		with self.db.open('r+') as f:
 			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
 			for row in reader:
@@ -57,9 +41,7 @@ class Wmt:
 				raise Exception('No session is running')
 			name = row['name']
 			start = datetime.datetime.strptime(row['start'], DATETIME_FMT)
-			print('total sec is ' + str((end - start).total_seconds()))
-			print('total sec/60 is ' + str((end - start).total_seconds() / 60))
-			duration = int(round((end - start).total_seconds() / 60))
+			duration = int(round((time - start).total_seconds() / 60))
 
 			# removing last line:
 			f.seek(0, os.SEEK_END)
@@ -73,7 +55,7 @@ class Wmt:
 
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
 			writer.writerow({'name': name,
-				'start': start.strftime(DATETIME_FMT), 'end': end.strftime(DATETIME_FMT),
+				'start': start.strftime(DATETIME_FMT), 'end': time.strftime(DATETIME_FMT),
 				'duration': duration})
 		self.db.save()
 		print(name + ' ' + start.strftime(DATETIME_FMT) + ' ended (' + str(duration) +' minutes)')
@@ -85,7 +67,7 @@ class Wmt:
 				pass
 			pprint.pprint(row)
 
-	def config(self):
+	def getconfigfromuser(self):
 		# TODO: select from list (onedrive, local ...)
 		print('''Where is My Time?
 
@@ -100,7 +82,7 @@ class Wmt:
 	def getconfig(self):
 		if not os.path.exists(self.config_path):
 			print('No configuration found - please configure:')
-			self.config()
+			self.getconfigfromuser()
 
 		self.config = configparser.ConfigParser()
 		self.config.read(self.config_path)
@@ -131,40 +113,44 @@ def main():
 	parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to start/end the session in')
 	parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
 	parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
-	parser.add_argument('-i', '--interactive', help='Interctive wait for session to end', action='store_true')
+	parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
+	t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time);
 
 	if args.action == 'start':
 		if args.name is None:
-			raise Exception('error: the following arguments are required: -n/--name')
-		wmt.start(args.name, args.time)
+			wmt.start(input('Session name:'), t0)
+		else:
+			wmt.start(args.name, t0)
+
 		if args.interactive:
-			t0 = time.time()
 			elapsed = 0
 			print('Hit Ctrl+\'C\' to end this session')
 			try:
 				while args.duration is None or elapsed < (args.duration * 60):
-					elapsed = time.time() - t0
+					elapsed_secs = (datetime.datetime.now() - t0).total_seconds()
+					hours, remainder = divmod(abs(elapsed_secs), 3600)
+					minutes, seconds = divmod(remainder, 60)
+					elapsed_str = 'Elapsed {}{:02}:{:02}:{:02}         '.format('-' if elapsed_secs < 0 else '', int(hours), int(minutes), int(seconds))
 					time.sleep(0.2)
 					if args.duration is None:
-						print('\rElapsed %s:%s     '%(int(elapsed / 60), round(elapsed % 60)), end='\r')
+						print('\r' + elapsed_str, end='\r')
 					else:
-						printprogressbar(elapsed, args.duration * 60, prefix='', suffix='Elapsed %s:%s'%(int(elapsed / 60), round(elapsed % 60)))
+						printprogressbar(elapsed_secs, args.duration * 60, prefix='', suffix=elapsed_str)
 			except KeyboardInterrupt:
 				pass
 			print()
-			wmt.end(0)
+			wmt.end(datetime.datetime.now())
 		else:
 			if not args.duration is None:
-				wmt.end(args.duration)
+				wmt.end(datetime.datetime.now() + datetime.timedelta(minutes = args.duration))
 	elif args.action == 'end':
-		wmt.end(args.time)
+		wmt.end(t0)
 	elif args.action == 'status':
 		wmt.status()
 	elif args.action == 'config':
-		wmt.config()
-
+		wmt.getconfigfromuser()
 
 if __name__ == "__main__":
 	main()
