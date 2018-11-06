@@ -6,22 +6,17 @@ import os
 import pprint
 import time
 from .db import Db
-from .constants import *
+from .onedrivedb import OneDriveDb
+from .common import *
 
-def getUserDir():
-	if os.name == 'nt':
-		return os.getenv('USERPROFILE')
-	elif os.name == 'posix':
-		return os.getenv('HOME')
-	else:
-		raise Exception('Not supported platform - ' + os.name)
+DB_SECTION_NAME = 'DB'
 
 class Wmt:
 	def __init__(self, debug = False):
 		self.debug_prints = debug
 		self.debug('initiating wmt')
 		# search and parse dotfile:
-		self.config_path = os.path.join(getUserDir(), '.wmtconfig')
+		self.config_path = os.path.join(getuserdir(), '.wmtconfig')
 		self.getconfig()
 		self.getdb()
 
@@ -30,6 +25,8 @@ class Wmt:
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
 			writer.writerow({'name': name, 'start': time.strftime(DATETIME_FMT)})
 
+		# TODO: no need to save here, but need to know not to download from server again
+		self.db.save()
 		print(name + ' ' + time.strftime(DATETIME_FMT))
 
 	def end(self, time):
@@ -49,7 +46,7 @@ class Wmt:
 			while pos > 0 and f.read(1) != "\n":
 				pos -= 1
 				f.seek(pos, os.SEEK_SET)
-			pos += 2
+			pos += 1
 			f.seek(pos, os.SEEK_SET)
 			f.truncate()
 
@@ -68,14 +65,34 @@ class Wmt:
 			pprint.pprint(row)
 
 	def getconfigfromuser(self):
-		# TODO: select from list (onedrive, local ...)
 		print('''Where is My Time?
-
 		''')
 		self.config = configparser.RawConfigParser()
-		print('auto selecting local file at: C:\\Users\\Idan\\OneDrive\\Documents\\wmtdb.csv')
-		self.config.add_section('Paths')
-		self.config.set('Paths', 'DataBaseFile', 'C:\\Users\\Idan\\OneDrive\\Documents\\wmtdb.csv')
+		self.config.add_section(DB_SECTION_NAME)
+
+		while True:
+			db_type_str = input(
+'''Select database type:
+	1. Local file
+	2. OneDrive
+''')
+			try:
+				db_type_code = int(db_type_str)
+				if 0 < db_type_code < 3:
+					break
+			except:
+				pass
+			print('Wrong value')
+
+		self.config.set(DB_SECTION_NAME, 'DataBaseType', db_type_code)
+		if db_type_code == 1:
+			default_local_file_path = os.path.join(getuserdir(), 'wmtdb.csv')
+			local_file_path = input("Please write local DB path, or leave empty to use default")
+			if local_file_path == '':
+				local_file_path = default_local_file_path
+			print('DB file is in ' + local_file_path)
+			self.config.set(DB_SECTION_NAME, 'DataBaseFile', local_file_path)
+
 		with open(self.config_path, 'w') as f:
 			self.config.write(f)
 
@@ -91,9 +108,13 @@ class Wmt:
 			self.debug(f.read())
 
 	def getdb(self):
-		# TODO: create the appropriate db
-		self.debug('Getting local file DB')
-		self.db =  Db(self.config['Paths']['DataBaseFile'])
+		db_type_code = self.config.getint(DB_SECTION_NAME, 'DataBaseType')
+		if db_type_code == 1:
+			self.db = Db(self.config[DB_SECTION_NAME]['DataBaseFile'])
+		elif db_type_code == 2:
+			self.db = OneDriveDb()
+		else:
+			raise Exception('Not supported DB type: ' + str(db_type_code))
 
 	def debug(self, f):
 		if self.debug_prints:
@@ -116,13 +137,10 @@ def main():
 	parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
-	t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time);
+	t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time)
 
 	if args.action == 'start':
-		if args.name is None:
-			wmt.start(input('Session name:'), t0)
-		else:
-			wmt.start(args.name, t0)
+		wmt.start(input('Session name:') if args.name is None else args.name, t0)
 
 		if args.interactive:
 			elapsed = 0

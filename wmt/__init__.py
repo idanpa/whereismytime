@@ -1,4 +1,4 @@
 from .db import *
-from .constants import *
+from .common import *
 
 name = "wmt"

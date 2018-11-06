@@ -1,6 +1,6 @@
 import os
 import csv
-from .constants import *
+from .common import *
 
 class Db:
 	def __init__(self, localpath):
