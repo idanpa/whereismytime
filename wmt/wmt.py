@@ -128,7 +128,7 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
 def main():
-	parser = argparse.ArgumentParser(description='Find out where your time goes. Simple time-tracer CLI')
+	parser = argparse.ArgumentParser(description='Find out where your time goes. Simple time-tracker CLI')
 	parser.add_argument('action', choices=['start', 'end', 'status', 'config'], help='Possible actions')
 	parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
 	parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to start/end the session in')
