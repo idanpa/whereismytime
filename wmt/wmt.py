@@ -5,6 +5,7 @@ import csv
 import os
 import pprint
 import time
+import itertools
 from .db import Db
 from .onedrivedb import OneDriveDb
 from .common import *
@@ -57,12 +58,19 @@ class Wmt:
 		self.db.save()
 		print(name + ' ' + start.strftime(DATETIME_FMT) + ' ended (' + str(duration) +' minutes)')
 
-	def status(self):
+	def log(self):
+		n = 10
 		with self.db.open('r') as f:
-			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES,)
-			for row in reader:
-				pass
-			pprint.pprint(row)
+			reader = csv.reader(f)
+			line_count = sum(1 for i in reader)
+			f.seek(0)
+			reader.__init__(f)
+
+			# print header:
+			print(next(reader))
+
+			for row in itertools.islice(reader, max(1, line_count - n), line_count):
+				print(row)
 
 	def getconfigfromuser(self):
 		print('''Where is My Time?
@@ -100,9 +108,17 @@ class Wmt:
 		if not os.path.exists(self.config_path):
 			print('No configuration found - please configure:')
 			self.getconfigfromuser()
+		try:
+			self.config = configparser.ConfigParser()
+			self.config.read(self.config_path)
+			self.config.getint(DB_SECTION_NAME, 'DataBaseType')
 
-		self.config = configparser.ConfigParser()
-		self.config.read(self.config_path)
+		except Exception as e:
+			print(e)
+			self.getconfigfromuser()
+			self.config = configparser.ConfigParser()
+			self.config.read(self.config_path)
+
 		self.debug('Config file:')
 		with open(self.config_path, 'r') as f:
 			self.debug(f.read())
@@ -129,7 +145,7 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 def main():
 	parser = argparse.ArgumentParser(description='Find out where your time goes. Simple time-tracker CLI')
-	parser.add_argument('action', choices=['start', 'end', 'status', 'config'], help='Possible actions')
+	parser.add_argument('action', choices=['start', 'end', 'log', 'config'], help='Possible actions')
 	parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
 	parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to start/end the session in')
 	parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
@@ -162,11 +178,11 @@ def main():
 			wmt.end(datetime.datetime.now())
 		else:
 			if not args.duration is None:
-				wmt.end(datetime.datetime.now() + datetime.timedelta(minutes = args.duration))
+				wmt.end(t0 + datetime.timedelta(minutes = args.duration))
 	elif args.action == 'end':
 		wmt.end(t0)
-	elif args.action == 'status':
-		wmt.status()
+	elif args.action == 'log':
+		wmt.log()
 	elif args.action == 'config':
 		wmt.getconfigfromuser()
 
