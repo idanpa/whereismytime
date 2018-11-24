@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import argparse
 import configparser
 import datetime
@@ -154,7 +156,7 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 def main():
 	# create the top-level parser
-	parser = argparse.ArgumentParser(description='Find out where your time goes. Simple time-tracker CLI', prog='wmt')
+	parser = argparse.ArgumentParser(description='Find out where is your time. Simple time management CLI.', prog='wmt')
 	parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
 	parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
 	subparsers = parser.add_subparsers(help='sub-command help', dest='command')
