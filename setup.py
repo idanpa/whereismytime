@@ -11,8 +11,11 @@ setuptools.setup(
     description="Where is my time?",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/idanp/whereismytime",
+    url="https://github.com/idanpa/whereismytime",
     packages=setuptools.find_packages(),
+    install_requires=[
+        'onedrivesdk',
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
