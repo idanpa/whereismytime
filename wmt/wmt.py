@@ -22,7 +22,13 @@ class Wmt:
 	def start(self, name, time):
 		with self.db.open('a') as f:
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
-			writer.writerow({'name': name, 'start': time.strftime(DATETIME_FMT)})
+			names = name.split(writer.writer.dialect.delimiter)
+			row = {}
+			row['start'] = time.strftime(DATETIME_FMT)
+			row['name'] = names[0]
+			for i in range(1, min(4, len(names))):
+				row['subname ' + str(i)] = names[i]
+			writer.writerow(row)
 
 		# TODO: no need to save here, but need to know not to download from server again before ending
 		self.db.save()
@@ -49,10 +55,11 @@ class Wmt:
 			f.seek(pos, os.SEEK_SET)
 			f.truncate()
 
+			row['end'] = time.strftime(DATETIME_FMT)
+			row['duration'] = duration
+
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
-			writer.writerow({'name': name,
-				'start': start.strftime(DATETIME_FMT), 'end': time.strftime(DATETIME_FMT),
-				'duration': duration})
+			writer.writerow(row)
 		self.db.save()
 		print(name + ' ' + start.strftime(DATETIME_FMT) + ' ended (' + str(duration) +' minutes)')
 
