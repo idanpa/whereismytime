@@ -56,8 +56,7 @@ class Wmt:
 		self.db.save()
 		print(name + ' ' + start.strftime(DATETIME_FMT) + ' ended (' + str(duration) +' minutes)')
 
-	def log(self):
-		n = 10
+	def log(self, n):
 		table_format = "{:<10}" + "{:<20}" * len(COLUMNS_NAMES)
 
 		with self.db.open('r') as f:
@@ -147,18 +146,30 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
 def main():
-	parser = argparse.ArgumentParser(description='Find out where your time goes. Simple time-tracker CLI')
-	parser.add_argument('action', choices=['start', 'end', 'log', 'config'], help='Possible actions')
-	parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
-	parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to start/end the session in')
-	parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
+	# create the top-level parser
+	parser = argparse.ArgumentParser(description='Find out where your time goes. Simple time-tracker CLI', prog='wmt')
 	parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
 	parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
+	subparsers = parser.add_subparsers(help='sub-command help', dest='command')
+
+	start_parser = subparsers.add_parser('start', help='starts new session')
+	start_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
+	start_parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to start the session in')
+	start_parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
+
+	end_parser = subparsers.add_parser('end', help='ends a session')
+	end_parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to end the session in')
+
+	end_parser = subparsers.add_parser('log', help='show log of sessions')
+	end_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of sessions to show')
+
+	end_parser = subparsers.add_parser('config', help='configure')
+
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
-	t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time)
 
-	if args.action == 'start':
+	if args.command == 'start':
+		t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time)
 		wmt.start(input('Session name:') if args.name is None else args.name, t0)
 
 		if args.interactive:
@@ -182,11 +193,12 @@ def main():
 		else:
 			if not args.duration is None:
 				wmt.end(t0 + datetime.timedelta(minutes = args.duration))
-	elif args.action == 'end':
+	elif args.command == 'end':
+		t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time)
 		wmt.end(t0)
-	elif args.action == 'log':
-		wmt.log()
-	elif args.action == 'config':
+	elif args.command == 'log':
+		wmt.log(args.number)
+	elif args.command == 'config':
 		wmt.getconfigfromuser()
 
 if __name__ == "__main__":
