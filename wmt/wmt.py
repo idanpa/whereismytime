@@ -3,7 +3,6 @@ import configparser
 import datetime
 import csv
 import os
-import pprint
 import time
 import itertools
 from .db import Db
@@ -17,7 +16,6 @@ class Wmt:
 		self.debug_prints = debug
 		self.debug('initiating wmt')
 		# search and parse dotfile:
-		self.config_path = os.path.join(getuserdir(), '.wmtconfig')
 		self.getconfig()
 		self.getdb()
 
@@ -26,7 +24,7 @@ class Wmt:
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
 			writer.writerow({'name': name, 'start': time.strftime(DATETIME_FMT)})
 
-		# TODO: no need to save here, but need to know not to download from server again
+		# TODO: no need to save here, but need to know not to download from server again before ending
 		self.db.save()
 		print(name + ' ' + time.strftime(DATETIME_FMT))
 
@@ -60,6 +58,8 @@ class Wmt:
 
 	def log(self):
 		n = 10
+		table_format = "{:<10}" + "{:<20}" * len(COLUMNS_NAMES)
+
 		with self.db.open('r') as f:
 			reader = csv.reader(f)
 			line_count = sum(1 for i in reader)
@@ -67,10 +67,12 @@ class Wmt:
 			reader.__init__(f)
 
 			# print header:
-			print(next(reader))
+			print(table_format.format("index", *next(reader)))
 
-			for row in itertools.islice(reader, max(1, line_count - n), line_count):
-				print(row)
+			i = max(1, line_count - n)
+			for row in itertools.islice(reader, max(0, line_count - n - 1), line_count):
+				print(table_format.format(i, *row))
+				i += 1
 
 	def getconfigfromuser(self):
 		print('''Where is My Time?
@@ -105,6 +107,7 @@ class Wmt:
 			self.config.write(f)
 
 	def getconfig(self):
+		self.config_path = os.path.join(getuserdir(), '.wmtconfig')
 		if not os.path.exists(self.config_path):
 			print('No configuration found - please configure:')
 			self.getconfigfromuser()
