@@ -15,6 +15,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'onedrivesdk',
+	'dateparser',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

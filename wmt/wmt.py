@@ -2,10 +2,11 @@
 
 import argparse
 import configparser
-import datetime
 import csv
 import os
 import time
+import datetime
+import dateparser
 import itertools
 from .db import Db
 from .onedrivedb import OneDriveDb
@@ -163,11 +164,11 @@ def main():
 
 	start_parser = subparsers.add_parser('start', help='starts new session')
 	start_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
-	start_parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to start the session in')
+	start_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 	start_parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
 
 	end_parser = subparsers.add_parser('end', help='ends a session')
-	end_parser.add_argument('-t', '--time', type=int, default=0, required=False, help='Relative time in minutes to end the session in')
+	end_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 
 	end_parser = subparsers.add_parser('log', help='show log of sessions')
 	end_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of sessions to show')
@@ -177,8 +178,14 @@ def main():
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
 
+	if args.command == 'start' or args.command == 'end':
+		try:
+			minutes_delta = int(args.time)
+			t0 = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
+		except ValueError:
+			t0 = dateparser.parse(args.time)
+
 	if args.command == 'start':
-		t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time)
 		wmt.start(input('Session name:') if args.name is None else args.name, t0)
 
 		if args.interactive:
@@ -203,7 +210,6 @@ def main():
 			if not args.duration is None:
 				wmt.end(t0 + datetime.timedelta(minutes = args.duration))
 	elif args.command == 'end':
-		t0 = datetime.datetime.now() + datetime.timedelta(minutes = args.time)
 		wmt.end(t0)
 	elif args.command == 'log':
 		wmt.log(args.number)
