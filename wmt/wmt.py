@@ -37,6 +37,13 @@ class Wmt:
 		self.db.save()
 		print(name + ' ' + time.strftime(DATETIME_FMT))
 
+	def is_session_running(self):
+		with self.db.open('r') as f:
+			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
+			for row in reader:
+				pass
+			return row['end'] == ''
+
 	def end(self, time):
 		with self.db.open('r+') as f:
 			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
@@ -177,6 +184,13 @@ def main():
 
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
+
+	# make a guess if no command was supplied:
+	if args.command is None:
+		if wmt.is_session_running():
+			args = parser.parse_args(args = ['end'])
+		else:
+			args = parser.parse_args(args = ['start'])
 
 	if args.command == 'start' or args.command == 'end':
 		try:
