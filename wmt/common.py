@@ -1,7 +1,6 @@
 import os
 
 COLUMNS_NAMES = ['start', 'end', 'duration', 'name', 'subname 1', 'subname 2', 'subname 3']
-DATETIME_FMT = '%d/%m/%y %H:%M.%S'
 
 def getuserdir():
 	if os.name == 'nt':

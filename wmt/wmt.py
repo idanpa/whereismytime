@@ -3,6 +3,7 @@
 import argparse
 import configparser
 import csv
+import sys
 import os
 import time
 import datetime
@@ -27,7 +28,7 @@ class Wmt:
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
 			names = name.split(writer.writer.dialect.delimiter)
 			row = {}
-			row['start'] = time.strftime(DATETIME_FMT)
+			row['start'] = time.isoformat()
 			row['name'] = names[0]
 			for i in range(1, min(4, len(names))):
 				row['subname ' + str(i)] = names[i]
@@ -35,7 +36,7 @@ class Wmt:
 
 		# TODO: no need to save here, but need to know not to download from server again before ending
 		self.db.save()
-		print(name + ' ' + time.strftime(DATETIME_FMT))
+		print(name + ' ' + time.isoformat())
 
 	def is_session_running(self):
 		with self.db.open('r') as f:
@@ -52,7 +53,10 @@ class Wmt:
 			if row['end'] != '':
 				raise Exception('No session is running')
 			name = row['name']
-			start = datetime.datetime.strptime(row['start'], DATETIME_FMT)
+			if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] > 7):
+				start = datetime.datetime.fromisoformat(row['start'])
+			else:
+				start = datetime.datetime.strptime(row['start'], "%Y-%m-%dT%H:%M:%S")
 			duration = int(round((time - start).total_seconds() / 60))
 
 			# removing last line:
@@ -65,13 +69,13 @@ class Wmt:
 			f.seek(pos, os.SEEK_SET)
 			f.truncate()
 
-			row['end'] = time.strftime(DATETIME_FMT)
+			row['end'] = time.isoformat()
 			row['duration'] = duration
 
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
 			writer.writerow(row)
 		self.db.save()
-		print(name + ' ' + start.strftime(DATETIME_FMT) + ' ended (' + str(duration) +' minutes)')
+		print(name + ' ' + start.isoformat() + ' ended (' + str(duration) +' minutes)')
 
 	def log(self, n):
 		table_format = "{:<10}" + "{:<20}" * len(COLUMNS_NAMES)
@@ -198,6 +202,7 @@ def main():
 			t0 = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
 		except ValueError:
 			t0 = dateparser.parse(args.time)
+		t0 = t0.replace(microsecond = 0)
 
 	if args.command == 'start':
 		wmt.start(input('Session name:') if args.name is None else args.name, t0)
