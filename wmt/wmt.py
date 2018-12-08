@@ -171,7 +171,7 @@ def main():
 
 	start_parser = subparsers.add_parser('start', help='starts new session')
 	start_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
-	start_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
+	start_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 	start_parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
 
 	end_parser = subparsers.add_parser('end', help='ends a session')
