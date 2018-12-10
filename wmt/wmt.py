@@ -117,7 +117,7 @@ class Wmt:
 		self.config.set(DB_SECTION_NAME, 'DataBaseType', db_type_code)
 		if db_type_code == 1:
 			default_local_file_path = os.path.join(getuserdir(), 'wmtdb.csv')
-			local_file_path = input("Please write local DB path, or leave empty to use default")
+			local_file_path = input("Please write local DB path, or leave empty to use default:")
 			if local_file_path == '':
 				local_file_path = default_local_file_path
 			print('DB file is in ' + local_file_path)
@@ -166,6 +166,14 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
+def parsetime(time_str):
+	try:
+		minutes_delta = int(time_str)
+		tm = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
+	except ValueError:
+		tm = dateparser.parse(time_str)
+	return tm.replace(microsecond = 0)
+
 def main():
 	# create the top-level parser
 	parser = argparse.ArgumentParser(description='Find out where is your time. Simple time management CLI.', prog='wmt')
@@ -177,6 +185,7 @@ def main():
 	start_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
 	start_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 	start_parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
+	start_parser.add_argument('-e', '--endtime', type=str, required=False, help='Relative time in minutes to end the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10)')
 
 	end_parser = subparsers.add_parser('end', help='ends a session')
 	end_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
@@ -196,18 +205,16 @@ def main():
 		else:
 			args = parser.parse_args(args = ['start'])
 
-	if args.command == 'start' or args.command == 'end':
-		try:
-			minutes_delta = int(args.time)
-			t0 = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
-		except ValueError:
-			t0 = dateparser.parse(args.time)
-		t0 = t0.replace(microsecond = 0)
-
 	if args.command == 'start':
+		if (not args.duration is None) and (not args.endtime is None):
+			raise Exception('Please supply either end or duration, can\'t handle both')
+
+		t0 = parsetime(args.time)
 		wmt.start(input('Session name:') if args.name is None else args.name, t0)
 
-		if args.interactive:
+		if not args.endtime is None:
+			wmt.end(parsetime(args.endtime))
+		elif args.interactive:
 			elapsed = 0
 			print('Hit Ctrl+\'C\' to end this session')
 			try:
@@ -229,7 +236,7 @@ def main():
 			if not args.duration is None:
 				wmt.end(t0 + datetime.timedelta(minutes = args.duration))
 	elif args.command == 'end':
-		wmt.end(t0)
+		wmt.end(parsetime(args.time))
 	elif args.command == 'log':
 		wmt.log(args.number)
 	elif args.command == 'config':
