@@ -5,7 +5,7 @@ with open("README.md", "r", encoding='utf-8') as f:
 
 setuptools.setup(
     name="wmt",
-    version="0.0.2",
+    version="0.0.3",
     author="IdanP",
     author_email="idan.kp@gmail.com",
     description="Where is my time?",
