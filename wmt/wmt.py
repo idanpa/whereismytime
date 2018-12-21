@@ -175,25 +175,28 @@ def parsetime(time_str):
 	return tm.replace(microsecond = 0)
 
 def main():
+	# aux parser for global commands (can be parsed at any position)
+	global_parser = argparse.ArgumentParser(add_help=False)
+	global_parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
+	global_parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
+
 	# create the top-level parser
-	parser = argparse.ArgumentParser(description='Find out where is your time. Simple time management CLI.', prog='wmt')
-	parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
-	parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
+	parser = argparse.ArgumentParser(description='Find out where is your time. Simple time management CLI.', prog='wmt', parents=[global_parser])
 	subparsers = parser.add_subparsers(help='sub-command help', dest='command')
 
-	start_parser = subparsers.add_parser('start', help='starts new session')
+	start_parser = subparsers.add_parser('start', help='starts new session', parents=[global_parser])
 	start_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
 	start_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 	start_parser.add_argument('-d', '--duration', type=int, required=False, help='Duration of the session in minutes')
 	start_parser.add_argument('-e', '--endtime', type=str, required=False, help='Relative time in minutes to end the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10)')
 
-	end_parser = subparsers.add_parser('end', help='ends a session')
+	end_parser = subparsers.add_parser('end', help='ends a session', parents=[global_parser])
 	end_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 
-	end_parser = subparsers.add_parser('log', help='show log of sessions')
+	end_parser = subparsers.add_parser('log', help='show log of sessions', parents=[global_parser])
 	end_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of sessions to show')
 
-	end_parser = subparsers.add_parser('config', help='configure')
+	end_parser = subparsers.add_parser('config', help='configure', parents=[global_parser])
 
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
