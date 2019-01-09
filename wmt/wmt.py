@@ -202,10 +202,10 @@ def main():
 	end_parser = subparsers.add_parser('end', help='ends a session', parents=[global_parser])
 	end_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 
-	end_parser = subparsers.add_parser('log', help='show log of sessions', parents=[global_parser])
-	end_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of sessions to show')
+	log_parser = subparsers.add_parser('log', help='show log of sessions', parents=[global_parser])
+	log_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of sessions to show')
 
-	end_parser = subparsers.add_parser('config', help='configure', parents=[global_parser])
+	config_parser = subparsers.add_parser('config', help='configure', parents=[global_parser])
 
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
