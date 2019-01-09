@@ -15,6 +15,12 @@ from .common import *
 
 DB_SECTION_NAME = 'DB'
 
+def fromisoformat(raw_str):
+	if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] > 7):
+		return datetime.datetime.fromisoformat(raw_str)
+	else:
+		return datetime.datetime.strptime(raw_str, "%Y-%m-%dT%H:%M:%S")
+
 class Wmt:
 	def __init__(self, debug = False):
 		self.debug_prints = debug
@@ -53,10 +59,7 @@ class Wmt:
 			if row['end'] != '':
 				raise Exception('No session is running')
 			name = row['name']
-			if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] > 7):
-				start = datetime.datetime.fromisoformat(row['start'])
-			else:
-				start = datetime.datetime.strptime(row['start'], "%Y-%m-%dT%H:%M:%S")
+			start = fromisoformat(row['start'])
 			duration = int(round((time - start).total_seconds() / 60))
 
 			# removing last line:
