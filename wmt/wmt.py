@@ -42,7 +42,7 @@ class Wmt:
 
 		# TODO: no need to save here, but need to know not to download from server again before ending
 		self.db.save()
-		print(name + ' ' + time.isoformat())
+		print(name + ' ' + str(time))
 
 	def is_session_running(self):
 		with self.db.open('r') as f:
@@ -78,23 +78,29 @@ class Wmt:
 			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
 			writer.writerow(row)
 		self.db.save()
-		print(name + ' ' + start.isoformat() + ' ended (' + str(duration) +' minutes)')
+		print(name + ' ' + str(start) + ' ended (' + str(duration) +' minutes)')
 
 	def log(self, n):
 		table_format = "{:<10}" + "{:<20}" * len(COLUMNS_NAMES)
 
 		with self.db.open('r') as f:
-			reader = csv.reader(f)
+			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
 			line_count = sum(1 for i in reader)
 			f.seek(0)
-			reader.__init__(f)
+			reader.__init__(f, fieldnames = COLUMNS_NAMES)
 
 			# print header:
 			print(table_format.format("index", *next(reader)))
 
 			i = max(1, line_count - n)
 			for row in itertools.islice(reader, max(0, line_count - n - 1), line_count):
-				print(table_format.format(i, *row))
+				start = fromisoformat(row['start'])
+				row['start'] = str(start)
+				if row['end'] == '':
+					row['duration'] = '(' + str(round((datetime.datetime.now() - start).total_seconds() / 60)) + ')'
+				else:
+					row['end'] = str(fromisoformat(row['end']))
+				print(table_format.format(i, *row.values()))
 				i += 1
 
 	def getconfigfromuser(self):
