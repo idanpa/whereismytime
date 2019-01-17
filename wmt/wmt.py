@@ -2,7 +2,6 @@
 
 import argparse
 import configparser
-import csv
 import sys
 import os
 import time
@@ -10,16 +9,12 @@ import datetime
 import dateparser
 import itertools
 from .db import Db
+from .db import WmtSession
 from .onedrivedb import OneDriveDb
 from .common import *
 
 DB_SECTION_NAME = 'DB'
-
-def fromisoformat(raw_str):
-	if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] > 7):
-		return datetime.datetime.fromisoformat(raw_str)
-	else:
-		return datetime.datetime.strptime(raw_str, "%Y-%m-%dT%H:%M:%S")
+NAMES_DELIMITER = ','
 
 class Wmt:
 	def __init__(self, debug = False):
@@ -30,78 +25,22 @@ class Wmt:
 		self.getdb()
 
 	def start(self, name, time):
-		with self.db.open('a') as f:
-			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
-			names = name.split(writer.writer.dialect.delimiter)
-			row = {}
-			row['start'] = time.isoformat()
-			row['name'] = names[0]
-			for i in range(1, min(4, len(names))):
-				row['subname ' + str(i)] = names[i]
-			writer.writerow(row)
-
+		self.db.insertsession(WmtSession(name, time))
 		# TODO: no need to save here, but need to know not to download from server again before ending
 		self.db.save()
 		print(name + ' ' + str(time))
 
 	def is_session_running(self):
-		with self.db.open('r') as f:
-			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
-			for row in reader:
-				pass
-			return row['end'] == ''
+		return self.db.getsession().end == None
 
 	def end(self, time):
-		with self.db.open('r+') as f:
-			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
-			for row in reader:
-				pass
-			if row['end'] != '':
-				raise Exception('No session is running')
-			name = row['name']
-			start = fromisoformat(row['start'])
-			duration = int(round((time - start).total_seconds() / 60))
-
-			# removing last line:
-			f.seek(0, os.SEEK_END)
-			pos = f.tell() - 2
-			while pos > 0 and f.read(1) != "\n":
-				pos -= 1
-				f.seek(pos, os.SEEK_SET)
-			pos += 1
-			f.seek(pos, os.SEEK_SET)
-			f.truncate()
-
-			row['end'] = time.isoformat()
-			row['duration'] = duration
-
-			writer = csv.DictWriter(f, fieldnames = COLUMNS_NAMES)
-			writer.writerow(row)
+		session = self.db.setend(time)
 		self.db.save()
-		print(name + ' ' + str(start) + ' ended (' + str(duration) +' minutes)')
+		print(session.name + ' ' + str(session.start) + ' ended (' + str(session.duration) +' minutes)')
+
 
 	def log(self, n):
-		table_format = "{:<10}" + "{:<20}" * len(COLUMNS_NAMES)
-
-		with self.db.open('r') as f:
-			reader = csv.DictReader(f, fieldnames = COLUMNS_NAMES)
-			line_count = sum(1 for i in reader)
-			f.seek(0)
-			reader.__init__(f, fieldnames = COLUMNS_NAMES)
-
-			# print header:
-			print(table_format.format("index", *next(reader)))
-
-			i = max(1, line_count - n)
-			for row in itertools.islice(reader, max(0, line_count - n - 1), line_count):
-				start = fromisoformat(row['start'])
-				row['start'] = str(start)
-				if row['end'] == '':
-					row['duration'] = '(' + str(round((datetime.datetime.now() - start).total_seconds() / 60)) + ')'
-				else:
-					row['end'] = str(fromisoformat(row['end']))
-				print(table_format.format(i, *row.values()))
-				i += 1
+		self.db.print(n)
 
 	def getconfigfromuser(self):
 		print('''Where is My Time?
@@ -125,7 +64,7 @@ class Wmt:
 
 		self.config.set(DB_SECTION_NAME, 'DataBaseType', db_type_code)
 		if db_type_code == 1:
-			default_local_file_path = os.path.join(getuserdir(), 'wmtdb.csv')
+			default_local_file_path = os.path.join(getuserdir(), 'wmt.db')
 			local_file_path = input("Please write local DB path, or leave empty to use default:")
 			if local_file_path == '':
 				local_file_path = default_local_file_path
@@ -167,7 +106,6 @@ class Wmt:
 	def debug(self, f):
 		if self.debug_prints:
 			print(f)
-
 
 def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))

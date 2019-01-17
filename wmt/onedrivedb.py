@@ -10,7 +10,7 @@ scopes=['wl.signin', 'wl.offline_access', 'onedrive.readwrite']
 api_base_url='https://api.onedrive.com/v1.0/'
 session_file_path = os.path.join(getuserdir(), '.wmtonedrivesession')
 
-ONEDRIVEDB_WMT_DB_PATH = 'Documents/wmtdb.csv'
+ONEDRIVEDB_WMT_DB_PATH = 'Documents/wmt.db'
 
 class OneDriveDb(Db):
 	def __init__(self):
