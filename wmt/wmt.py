@@ -2,12 +2,10 @@
 
 import argparse
 import configparser
-import sys
 import os
 import time
 import datetime
 import dateparser
-import itertools
 from .db import Db
 from .db import WmtSession
 from .onedrivedb import OneDriveDb
@@ -16,17 +14,16 @@ from .common import *
 DB_SECTION_NAME = 'DB'
 NAMES_DELIMITER = ','
 
+# TODO: consider remove this class
 class Wmt:
 	def __init__(self, debug = False):
 		self.debug_prints = debug
 		self.debug('initiating wmt')
-		# search and parse dotfile:
 		self.getconfig()
 		self.getdb()
 
 	def start(self, name, time):
 		self.db.insertsession(WmtSession(name, time))
-		# TODO: no need to save here, but need to know not to download from server again before ending
 		self.db.save()
 		print(name + ' ' + str(time))
 
@@ -37,10 +34,6 @@ class Wmt:
 		session = self.db.setend(time)
 		self.db.save()
 		print(session.name + ' ' + str(session.start) + ' ended (' + str(session.duration) +' minutes)')
-
-
-	def log(self, n):
-		self.db.print(n)
 
 	def getconfigfromuser(self):
 		print('''Where is My Time?
@@ -75,6 +68,7 @@ class Wmt:
 			self.config.write(f)
 
 	def getconfig(self):
+		# search and parse dotfile:
 		self.config_path = os.path.join(getuserdir(), '.wmtconfig')
 		if not os.path.exists(self.config_path):
 			print('No configuration found - please configure:')
@@ -108,10 +102,10 @@ class Wmt:
 			print(f)
 
 def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
+	percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+	filledLength = int(length * iteration // total)
+	bar = fill * filledLength + '-' * (length - filledLength)
+	print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
 def parsetime(time_str):
 	try:
@@ -145,11 +139,23 @@ def main():
 
 	config_parser = subparsers.add_parser('config', help='configure', parents=[global_parser])
 
+	edit_parser = subparsers.add_parser('edit', help='edit session', parents=[global_parser])
+	edit_parser.add_argument('-id', '--id', type=int, default=None, required=False, help='Session id to edit, default value would edit last session')
+	edit_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
+	edit_parser.add_argument('-s', '--starttime', type=str, default=None, required=False, help='Relative time in minutes to set the start of the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10).')
+	edit_parser.add_argument('-e', '--endtime', type=str, default=None, required=False, help='Relative time in minutes to set the end of the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10)')
+	# TODO: support also duration
+	edit_parser.add_argument('-d', '--duration', type=int, default=None, required=False, help='Duration of the session in minutes')
+
+	del_parser = subparsers.add_parser('rm', help='delete session', parents=[global_parser])
+	del_parser.add_argument('-id', '--id', type=int, default=None, required=False, help='Session id to be deleted, default value would delete last session')
+
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
 
 	# make a guess if no command was supplied:
 	if args.command is None:
+		# TODO: also support start/end etc for the case of the start
 		if wmt.is_session_running():
 			args = parser.parse_args(args = ['end'])
 		else:
@@ -188,7 +194,18 @@ def main():
 	elif args.command == 'end':
 		wmt.end(parsetime(args.time))
 	elif args.command == 'log':
-		wmt.log(args.number)
+		wmt.db.print(args.number)
+	elif args.command == 'edit':
+		s = wmt.db.getsession(args.id)
+		if not args.name is None:
+			s.name = args.name
+		if not args.starttime is None:
+			s.start = parsetime(args.starttime)
+		if not args.endtime is None:
+			s.end = parsetime(args.endtime)
+		wmt.db.setsession(s, args.id)
+	elif args.command == 'rm':
+		wmt.db.dropsession(args.id)
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 

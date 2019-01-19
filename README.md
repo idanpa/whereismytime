@@ -6,7 +6,7 @@ Find out where is your time. Simple time management CLI.
 pip install wmt
 ```
 
-On first usage you will be asked to configure your setup. Supported configuration are using local .csv file or hosting it automatically on OneDrive.
+On first usage you will be asked to configure your setup. Supported configuration are using local sqlite database file or hosting it automatically on OneDrive.
 
 ## Usage
 

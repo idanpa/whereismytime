@@ -45,7 +45,6 @@ class Db:
 		# maybe there's a way to update and return updated row in one statement?
 		return self.getsession(id)
 
-
 	def setsession(self, session, id = None):
 		with self.conn:
 			if (id == None):
@@ -69,8 +68,15 @@ class Db:
 		raw = c.fetchone()
 		return WmtSession(raw[0], raw[1], raw[2])
 
+	def dropsession(self, id = None):
+		with self.conn:
+			if (id == None):
+				self.conn.execute('''DELETE FROM sessions WHERE id = (SELECT MAX(id) FROM sessions)''')
+			else:
+				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', id)
+
 	def print(self, n = 10):
-		c = self.conn.execute('''SELECT * FROM sessions''')
+		c = self.conn.execute('''SELECT * FROM sessions ORDER BY id DESC LIMIT ''' + str(n))
 		rows = c.fetchall()
 		for row in rows:
 			for record in range(len(row)):
