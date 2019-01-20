@@ -150,6 +150,14 @@ def main():
 	del_parser = subparsers.add_parser('rm', help='delete session', parents=[global_parser])
 	del_parser.add_argument('-id', '--id', type=int, default=None, required=False, help='Session id to be deleted, default value would delete last session')
 
+	import_parser = subparsers.add_parser('import', help='Import sessions from csv file', parents=[global_parser])
+	# TODO: make this positional argument
+	import_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to import')
+
+	expport_parser = subparsers.add_parser('export', help='Export sessions to csv file', parents=[global_parser])
+	# TODO: make this positional argument
+	expport_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to export')
+
 	args = parser.parse_args()
 	wmt = Wmt(args.verbose)
 
@@ -206,6 +214,17 @@ def main():
 		wmt.db.setsession(s, args.id)
 	elif args.command == 'rm':
 		wmt.db.dropsession(args.id)
+	elif args.command == 'import':
+		import csv
+		with open(args.filepath, 'r') as f:
+			reader = csv.DictReader(f)
+			for row in reader:
+				wmt.db.insertsession(WmtSession(
+					NAMES_DELIMITER.join([row['name'],row['subname 1'],row['subname 2']]),
+					parsetime(row['start']), parsetime(row['end'])))
+
+	elif args.command == 'export':
+		wmt.db.export(args.filepath)
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 

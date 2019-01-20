@@ -18,7 +18,10 @@ class WmtSession:
 class Db:
 	def __init__(self, localpath):
 		self.localpath = localpath
+		# PARSE_DECLTYPES is for parsing datetime in and out the db
 		self.conn = sqlite3.connect(self.localpath, detect_types=sqlite3.PARSE_DECLTYPES)
+		# Support dictionary cursor
+		self.conn.row_factory = sqlite3.Row
 
 		self.conn.execute('''
 		CREATE TABLE IF NOT EXISTS sessions(
@@ -76,7 +79,9 @@ class Db:
 				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', id)
 
 	def print(self, n = 10):
-		c = self.conn.execute('''SELECT * FROM sessions ORDER BY id DESC LIMIT ''' + str(n))
+		c = self.conn.execute('''SELECT * FROM
+			(SELECT * FROM sessions ORDER BY start DESC LIMIT ''' + str(n) + ''')
+			ORDER BY start ASC''')
 		rows = c.fetchall()
 		for row in rows:
 			for record in range(len(row)):
@@ -87,3 +92,16 @@ class Db:
 		# TODO: call commit() here instead of calling using with self.conn:
 		pass
 
+	def export(self, filepath):
+		import csv
+		with  open(filepath, 'w') as f:
+			writer = csv.DictWriter(f, fieldnames = ['name', 'start', 'end'])
+			writer.writeheader()
+			c = self.conn.execute('''SELECT * FROM sessions''')
+			rows = c.fetchall()
+			for row in rows:
+				r = {}
+				r['start'] = str(row['start'])
+				r['end'] = str(row['end'])
+				r['name'] = str(row['name'])
+				writer.writerow(r)
