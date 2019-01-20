@@ -144,7 +144,6 @@ def main():
 	edit_parser.add_argument('-n', '--name', type=str, required=False, help='Name of the session')
 	edit_parser.add_argument('-s', '--starttime', type=str, default=None, required=False, help='Relative time in minutes to set the start of the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10).')
 	edit_parser.add_argument('-e', '--endtime', type=str, default=None, required=False, help='Relative time in minutes to set the end of the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10)')
-	# TODO: support also duration
 	edit_parser.add_argument('-d', '--duration', type=int, default=None, required=False, help='Duration of the session in minutes')
 
 	del_parser = subparsers.add_parser('rm', help='delete session', parents=[global_parser])
@@ -211,6 +210,8 @@ def main():
 			s.start = parsetime(args.starttime)
 		if not args.endtime is None:
 			s.end = parsetime(args.endtime)
+		elif not args.duration is None:
+			s.end = s.start + datetime.timedelta(minutes = args.duration)
 		wmt.db.setsession(s, args.id)
 	elif args.command == 'rm':
 		wmt.db.dropsession(args.id)
@@ -222,7 +223,6 @@ def main():
 				wmt.db.insertsession(WmtSession(
 					NAMES_DELIMITER.join([row['name'],row['subname 1'],row['subname 2']]),
 					parsetime(row['start']), parsetime(row['end'])))
-
 	elif args.command == 'export':
 		wmt.db.export(args.filepath)
 	elif args.command == 'config':
