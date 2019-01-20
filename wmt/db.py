@@ -5,15 +5,10 @@ import datetime
 from .common import *
 
 class WmtSession:
-	def __init__(self, name, start, end = None):
-		self.start = start
-		self.end = end
+	def __init__(self, name, start, duration = None):
 		self.name = name
-
-		if end is None:
-			self.duration = (datetime.datetime.now() - start).total_seconds() / 60
-		else:
-			self.duration = int((end - start).total_seconds() / 60)
+		self.start = start
+		self.duration = duration
 
 class Db:
 	def __init__(self, localpath):
@@ -28,48 +23,48 @@ class Db:
 			id integer PRIMARY KEY,
 			name text NOT NULL,
 			start timestamp NOT NULL,
-			end timestamp)''')
+			duration integer)''')
 
 	def insertsession(self, session):
 		with self.conn:
 			c = self.conn.execute('''
-			INSERT INTO sessions (start, end, name)
+			INSERT INTO sessions (name, start, duration)
 			VALUES (?, ?, ?)''',
-			[session.start, session.end, session.name])
+			[session.name, session.start, session.duration])
 			return c.lastrowid
 
 	# if no id given, edit the last session
-	def setend(self, end, id = None):
-		with self.conn:
-			if (id == None):
-				self.conn.execute('''UPDATE sessions SET end = ? WHERE id = (SELECT MAX(id) FROM sessions)''', [end])
-			else:
-				self.conn.execute('''UPDATE sessions SET end = ? WHERE id = ?''', [end, id])
-		# maybe there's a way to update and return updated row in one statement?
-		return self.getsession(id)
+	# def setend(self, end, id = None):
+	# 	with self.conn:
+	# 		if (id == None):
+	# 			self.conn.execute('''UPDATE sessions SET end = ? WHERE id = (SELECT MAX(id) FROM sessions)''', [end])
+	# 		else:
+	# 			self.conn.execute('''UPDATE sessions SET end = ? WHERE id = ?''', [end, id])
+	# 	# maybe there's a way to update and return updated row in one statement?
+	# 	return self.getsession(id)
 
 	def setsession(self, session, id = None):
 		with self.conn:
 			if (id == None):
 				self.conn.execute('''UPDATE sessions SET
-					start = ?, end = ?, name = ?
+					name = ?, start = ?, duration = ?
 					WHERE id = (SELECT MAX(id) FROM sessions)''',
-					[session.start, session.end, session.name])
+					[session.name, session.start, session.duration])
 			else:
 				self.conn.execute('''UPDATE sessions SET
-					start = ?, end = ?, name = ?
+					name = ?, start = ?, duration = ?
 					WHERE id = ?''',
-					[session.start, session.end, session.name,
+					[session.name, session.start, session.duration,
 					id])
 
 	def getsession(self, id = None):
 		if (id == None):
-			c = self.conn.execute('''SELECT name, start, end FROM sessions WHERE id = (SELECT MAX(id) FROM sessions)''')
+			c = self.conn.execute('''SELECT * FROM sessions WHERE id = (SELECT MAX(id) FROM sessions)''')
 		else:
-			c = self.conn.execute('''SELECT name, start, end FROM sessions WHERE id = ?''', [id])
+			c = self.conn.execute('''SELECT * FROM sessions WHERE id = ?''', [id])
 
 		raw = c.fetchone()
-		return WmtSession(raw[0], raw[1], raw[2])
+		return WmtSession(raw['name'], raw['start'], raw['duration'])
 
 	def dropsession(self, id = None):
 		with self.conn:
@@ -96,13 +91,13 @@ class Db:
 	def export(self, filepath):
 		import csv
 		with  open(filepath, 'w') as f:
-			writer = csv.DictWriter(f, fieldnames = ['name', 'start', 'end'])
+			writer = csv.DictWriter(f, fieldnames = ['name', 'start', 'duration'])
 			writer.writeheader()
 			c = self.conn.execute('''SELECT * FROM sessions''')
 			rows = c.fetchall()
 			for row in rows:
 				r = {}
-				r['start'] = str(row['start'])
-				r['end'] = str(row['end'])
 				r['name'] = str(row['name'])
+				r['start'] = str(row['start'])
+				r['duration'] = str(row['duration'])
 				writer.writerow(r)
