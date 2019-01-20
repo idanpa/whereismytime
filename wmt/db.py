@@ -76,12 +76,13 @@ class Db:
 			if (id == None):
 				self.conn.execute('''DELETE FROM sessions WHERE id = (SELECT MAX(id) FROM sessions)''')
 			else:
-				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', id)
+				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', [id])
 
 	def print(self, n = 10):
 		c = self.conn.execute('''SELECT * FROM
-			(SELECT * FROM sessions ORDER BY start DESC LIMIT ''' + str(n) + ''')
-			ORDER BY start ASC''')
+					(SELECT * FROM sessions ORDER BY start DESC LIMIT ?)
+					ORDER BY start ASC''',
+					[n])
 		rows = c.fetchall()
 		for row in rows:
 			for record in range(len(row)):

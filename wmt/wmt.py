@@ -31,6 +31,7 @@ class Wmt:
 		return self.db.getsession().end == None
 
 	def end(self, time):
+		# TODO: remove this
 		session = self.db.setend(time)
 		self.db.save()
 		print(session.name + ' ' + str(session.start) + ' ended (' + str(session.duration) +' minutes)')
@@ -108,6 +109,8 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 	print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
 def parsetime(time_str):
+	if time_str is None or time_str == '':
+		return None
 	try:
 		minutes_delta = int(time_str)
 		tm = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
@@ -132,6 +135,7 @@ def main():
 	start_parser.add_argument('-e', '--endtime', type=str, required=False, help='Relative time in minutes to end the session in (e.g. -15), or absolute time (e.g 14:12 or yesterday at 8:10)')
 
 	end_parser = subparsers.add_parser('end', help='ends a session', parents=[global_parser])
+	end_parser.add_argument('-id', '--id', type=int, default=None, required=False, help='Session id to end, default value would end last session')
 	end_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 
 	log_parser = subparsers.add_parser('log', help='show log of sessions', parents=[global_parser])
@@ -199,9 +203,14 @@ def main():
 			if not args.duration is None:
 				wmt.end(t0 + datetime.timedelta(minutes = args.duration))
 	elif args.command == 'end':
-		wmt.end(parsetime(args.time))
-	elif args.command == 'log':
-		wmt.db.print(args.number)
+		s = wmt.db.getsession(args.id)
+		if s.end is None:
+			print('Session was already ended.')
+		else:
+			s.end = parsetime(args.time)
+			wmt.db.setsession(s, args.id)
+			wmt.db.save()
+			print(s.name + ' ' + str(s.start) + ' ended (' + str(s.duration) +' minutes)')
 	elif args.command == 'edit':
 		s = wmt.db.getsession(args.id)
 		if not args.name is None:
@@ -213,6 +222,7 @@ def main():
 		elif not args.duration is None:
 			s.end = s.start + datetime.timedelta(minutes = args.duration)
 		wmt.db.setsession(s, args.id)
+		wmt.db.save()
 	elif args.command == 'rm':
 		wmt.db.dropsession(args.id)
 	elif args.command == 'import':
@@ -225,6 +235,8 @@ def main():
 					parsetime(row['start']), parsetime(row['end'])))
 	elif args.command == 'export':
 		wmt.db.export(args.filepath)
+	elif args.command == 'log':
+		wmt.db.print(args.number)
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 
