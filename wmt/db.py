@@ -10,6 +10,17 @@ class WmtSession:
 		self.start = start
 		self.duration = duration
 
+	def setend(self, endtime):
+		self.duration = int(round((endtime - self.start).total_seconds() / 60.0))
+
+	def __str__(self):
+		r = self.name + ' ' + str(self.start) + ' '
+		if self.duration is None:
+			r += '(' + str(round((datetime.datetime.now() - self.start).total_seconds() / 60.0)) + ' minutes)'
+		else:
+			r += str(self.duration) + ' minutes'
+		return r
+
 class Db:
 	def __init__(self, localpath):
 		self.localpath = localpath

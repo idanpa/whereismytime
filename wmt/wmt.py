@@ -22,19 +22,8 @@ class Wmt:
 		self.getconfig()
 		self.getdb()
 
-	def start(self, name, time):
-		self.db.insertsession(WmtSession(name, time))
-		self.db.save()
-		print(name + ' ' + str(time))
-
 	def is_session_running(self):
 		return self.db.getsession().duration == None
-
-	def end(self, time):
-		# TODO: remove this
-		session = self.db.setend(time)
-		self.db.save()
-		print(session.name + ' ' + str(session.start) + ' ended (' + str(session.duration) +' minutes)')
 
 	def getconfigfromuser(self):
 		print('''Where is My Time?
@@ -108,9 +97,6 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 	bar = fill * filledLength + '-' * (length - filledLength)
 	print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
-def minutesdelta(start, end):
-	return int(round((end - start).total_seconds() / 60.0))
-
 def parsetime(time_str):
 	if time_str is None or time_str == '':
 		return None
@@ -180,10 +166,10 @@ def main():
 			raise Exception('Please supply either end or duration, can\'t handle both')
 
 		t0 = parsetime(args.time)
-		wmt.start(input('Session name:') if args.name is None else args.name, t0)
+		s = WmtSession(input('Session name:') if args.name is None else args.name, t0)
 
 		if not args.endtime is None:
-			wmt.end(parsetime(args.endtime))
+			s.setend(parsetime(args.endtime))
 		elif args.interactive:
 			elapsed = 0
 			print('Hit Ctrl+\'C\' to end this session')
@@ -201,17 +187,20 @@ def main():
 			except KeyboardInterrupt:
 				pass
 			print()
-			wmt.end(datetime.datetime.now())
+			s.setend(datetime.datetime.now())
 		else:
 			if not args.duration is None:
-				wmt.end(t0 + datetime.timedelta(minutes = args.duration))
+				s.setend(t0 + datetime.timedelta(minutes = args.duration))
+		wmt.db.insertsession(s)
+		wmt.db.save()
+		print(s)
 	elif args.command == 'end':
 		s = wmt.db.getsession(args.id)
 		if s.duration is None:
-			s.duration = minutesdelta(s.start, parsetime(args.time))
+			s.setend(parsetime(args.time))
 			wmt.db.setsession(s, args.id)
 			wmt.db.save()
-			print(s.name + ' ' + str(s.start) + ' ended (' + str(s.duration) +' minutes)')
+			print(s)
 		else:
 			print('Session was already ended.')
 	elif args.command == 'edit':
@@ -221,7 +210,7 @@ def main():
 		if not args.starttime is None:
 			s.start = parsetime(args.starttime)
 		if not args.endtime is None:
-			s.duration = minutesdelta(s.start, parsetime(args.endtime))
+			s.setend(parsetime(args.endtime))
 		elif not args.duration is None:
 			s.duration = args.duration
 		wmt.db.setsession(s, args.id)
