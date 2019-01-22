@@ -5,10 +5,12 @@ import datetime
 from .common import *
 
 class WmtSession:
-	def __init__(self, name, start, duration = None):
+	def __init__(self, name, start, duration = None, end = None):
 		self.name = name
 		self.start = start
 		self.duration = duration
+		if end is not None:
+			self.setend(end)
 
 	def setend(self, endtime):
 		self.duration = int(round((endtime - self.start).total_seconds() / 60.0))
@@ -44,16 +46,6 @@ class Db:
 			[session.name, session.start, session.duration])
 			return c.lastrowid
 
-	# if no id given, edit the last session
-	# def setend(self, end, id = None):
-	# 	with self.conn:
-	# 		if (id == None):
-	# 			self.conn.execute('''UPDATE sessions SET end = ? WHERE id = (SELECT MAX(id) FROM sessions)''', [end])
-	# 		else:
-	# 			self.conn.execute('''UPDATE sessions SET end = ? WHERE id = ?''', [end, id])
-	# 	# maybe there's a way to update and return updated row in one statement?
-	# 	return self.getsession(id)
-
 	def setsession(self, session, id = None):
 		with self.conn:
 			if (id == None):
@@ -84,31 +76,37 @@ class Db:
 			else:
 				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', [id])
 
-	def print(self, n = 10):
+	def printsessions(self, n = 10):
+		row_format ="{:<4} {:<15} {:<20} {:<6}"
 		c = self.conn.execute('''SELECT * FROM
 					(SELECT * FROM sessions ORDER BY start DESC LIMIT ?)
 					ORDER BY start ASC''',
 					[n])
+		print(row_format.format(*[col[0] for col in c.description]))
 		rows = c.fetchall()
 		for row in rows:
-			for record in range(len(row)):
-				print(row[record], end=" ")
-			print()
+			print(row_format.format(*[str(cell) for cell in row]))
+
+	def getsessions(self, query):
+		# TODO: return iterable of sessions according to given query
+		pass
 
 	def save(self):
 		# TODO: call commit() here instead of calling using with self.conn:
 		pass
 
-	def export(self, filepath):
+	def exportcsv(self, filepath):
 		import csv
 		with  open(filepath, 'w') as f:
-			writer = csv.DictWriter(f, fieldnames = ['name', 'start', 'duration'])
-			writer.writeheader()
 			c = self.conn.execute('''SELECT * FROM sessions''')
-			rows = c.fetchall()
-			for row in rows:
-				r = {}
-				r['name'] = str(row['name'])
-				r['start'] = str(row['start'])
-				r['duration'] = str(row['duration'])
-				writer.writerow(r)
+			writer = csv.writer(f)
+			writer.writerow([col[0] for col in c.description])
+			for row in c.fetchall():
+				writer.writerow(row)
+
+	def importcsv(self, filepath):
+		import csv
+		with open(filepath, 'r') as f:
+			reader = csv.DictReader(f)
+			for row in reader:
+				self.insertsession(WmtSession(row['name'], parsetime(row['start']), int(row['duration'])))

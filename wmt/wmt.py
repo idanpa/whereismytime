@@ -26,8 +26,6 @@ class Wmt:
 		return self.db.getsession().duration == None
 
 	def getconfigfromuser(self):
-		print('''Where is My Time?
-		''')
 		self.config = configparser.RawConfigParser()
 		self.config.add_section(DB_SECTION_NAME)
 
@@ -98,20 +96,21 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 	print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
 def parsetime(time_str):
-	if time_str is None or time_str == '':
+	if time_str is None:
 		return None
 	try:
 		minutes_delta = int(time_str)
 		tm = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
 	except ValueError:
 		tm = dateparser.parse(time_str)
-	return tm.replace(microsecond = 0)
+	return tm.replace(microsecond = 0) if tm is not None else None
 
 def main():
 	# aux parser for global commands (can be parsed at any position)
 	global_parser = argparse.ArgumentParser(add_help=False)
 	global_parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
 	global_parser.add_argument('-i', '--interactive', help='Interactive wait for session to end', action='store_true')
+	global_parser.add_argument('-y', '--yes', help='Suppress warning', action='store_true')
 
 	# create the top-level parser
 	parser = argparse.ArgumentParser(description='Find out where is your time. Simple time management CLI.', prog='wmt', parents=[global_parser])
@@ -216,19 +215,15 @@ def main():
 		wmt.db.setsession(s, args.id)
 		wmt.db.save()
 	elif args.command == 'rm':
-		wmt.db.dropsession(args.id)
+		if args.yes or input('Drop session - ' + str(wmt.db.getsession(args.id)) + '? (y/N): ').lower() == 'y':
+			wmt.db.dropsession(args.id)
+			print('Session dropped')
 	elif args.command == 'import':
-		import csv
-		with open(args.filepath, 'r') as f:
-			reader = csv.DictReader(f)
-			for row in reader:
-				wmt.db.insertsession(WmtSession(
-					NAMES_DELIMITER.join([row['name'],row['subname 1'],row['subname 2']]),
-					parsetime(row['start']), parsetime(row['end'])))
+		wmt.db.importcsv(args.filepath)
 	elif args.command == 'export':
-		wmt.db.export(args.filepath)
+		wmt.db.exportcsv(args.filepath)
 	elif args.command == 'log':
-		wmt.db.print(args.number)
+		wmt.db.printsessions(args.number)
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 
