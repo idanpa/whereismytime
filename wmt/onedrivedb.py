@@ -35,12 +35,22 @@ class OneDriveDb(Db):
 			self.client.auth_provider.refresh_token()
 		else:
 			auth_url = self.client.auth_provider.get_auth_url(redirect_uri)
-			# this will block until we have the auth code :
-			code = GetAuthCodeServer.get_auth_code(auth_url, redirect_uri)
+			if os.name == 'posix' and (
+			('ANDROID_DATA' in os.environ) # hacky way to know we are on termux
+			or ('Microsoft' in os.uname()[3])): # WSL
+				# Ask for the code
+				print('Paste this URL into your browser, approve the app\'s access.')
+				print('Copy everything in the address bar after "code=", and paste it below.')
+				print(auth_url)
+				code = input('Paste code here: ')
+
+			else: # system has a browser:
+				# this will block until we have the auth code :
+				code = GetAuthCodeServer.get_auth_code(auth_url, redirect_uri)
+
 			self.client.auth_provider.authenticate(code, redirect_uri, WMT_CLIENT_SECRET)
 
 		self.client.auth_provider.save_session(path=session_file_path)
-
 
 	def save(self):
 		super().save()
