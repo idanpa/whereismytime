@@ -60,14 +60,16 @@ class Db:
 					[session.name, session.start, session.duration,
 					id])
 
+	def _getsession(self, raw):
+		return WmtSession(raw['name'], raw['start'], raw['duration'])
+
 	def getsession(self, id = None):
 		if (id == None):
 			c = self.conn.execute('''SELECT * FROM sessions WHERE id = (SELECT MAX(id) FROM sessions)''')
 		else:
 			c = self.conn.execute('''SELECT * FROM sessions WHERE id = ?''', [id])
 
-		raw = c.fetchone()
-		return WmtSession(raw['name'], raw['start'], raw['duration'])
+		return self._getsession(c.fetchone())
 
 	def dropsession(self, id = None):
 		with self.conn:
@@ -76,16 +78,21 @@ class Db:
 			else:
 				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', [id])
 
-	def printsessions(self, n = 10):
+	def _printsessions(self, conn):
 		row_format ="{:<4} {:<15} {:<20} {:<6}"
+		print(row_format.format(*[col[0] for col in conn.description]))
+		for row in conn.fetchall():
+			print(row_format.format(*[str(cell) for cell in row]))
+
+	def printlastsessions(self, n = 10):
 		c = self.conn.execute('''SELECT * FROM
 					(SELECT * FROM sessions ORDER BY start DESC LIMIT ?)
 					ORDER BY start ASC''',
 					[n])
-		print(row_format.format(*[col[0] for col in c.description]))
-		rows = c.fetchall()
-		for row in rows:
-			print(row_format.format(*[str(cell) for cell in row]))
+		self._printsessions(c)
+
+	def _getsessions(self, conn):
+		return [self._getsession(row) for row in conn]
 
 	def getsessions(self, query):
 		# TODO: return iterable of sessions according to given query

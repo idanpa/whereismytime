@@ -223,7 +223,7 @@ def main():
 	elif args.command == 'export':
 		wmt.db.exportcsv(args.filepath)
 	elif args.command == 'log':
-		wmt.db.printsessions(args.number)
+		wmt.db.printlastsessions(args.number)
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 
