@@ -16,14 +16,9 @@ NAMES_DELIMITER = ','
 
 # TODO: consider remove this class
 class Wmt:
-	def __init__(self, debug = False):
-		self.debug_prints = debug
-		self.debug('initiating wmt')
+	def __init__(self):
 		self.getconfig()
 		self.getdb()
-
-	def is_session_running(self):
-		return self.db.getsession().duration == None
 
 	def getconfigfromuser(self):
 		self.config = configparser.RawConfigParser()
@@ -72,10 +67,6 @@ class Wmt:
 			self.config = configparser.ConfigParser()
 			self.config.read(self.config_path)
 
-		self.debug('Config file:')
-		with open(self.config_path, 'r') as f:
-			self.debug(f.read())
-
 	def getdb(self):
 		db_type_code = self.config.getint(DB_SECTION_NAME, 'DataBaseType')
 		if db_type_code == 1:
@@ -84,10 +75,6 @@ class Wmt:
 			self.db = OneDriveDb()
 		else:
 			raise Exception('Not supported DB type: ' + str(db_type_code))
-
-	def debug(self, f):
-		if self.debug_prints:
-			print(f)
 
 def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
 	percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
@@ -150,7 +137,7 @@ def main():
 	expport_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to export')
 
 	args = parser.parse_args()
-	wmt = Wmt(args.verbose)
+	wmt = Wmt()
 
 	# make a guess if no command was supplied:
 	if args.command is None:

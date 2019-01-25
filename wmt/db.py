@@ -79,7 +79,7 @@ class Db:
 				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', [id])
 
 	def _printsessions(self, conn):
-		row_format ="{:<4} {:<15} {:<20} {:<6}"
+		row_format ="{:<4} {:<25} {:<20} {:<6}"
 		print(row_format.format(*[col[0] for col in conn.description]))
 		for row in conn.fetchall():
 			print(row_format.format(*[str(cell) for cell in row]))
@@ -97,6 +97,9 @@ class Db:
 	def getsessions(self, query):
 		# TODO: return iterable of sessions according to given query
 		pass
+
+	def is_lastsession_running(self):
+		return self.getsession().duration == None
 
 	def save(self):
 		# TODO: call commit() here instead of calling using with self.conn:
