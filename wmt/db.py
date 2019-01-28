@@ -5,9 +5,10 @@ import datetime
 from .common import *
 
 class WmtSession:
-	def __init__(self, name, start, duration = None, end = None):
+	def __init__(self, name, start, duration = None, id = None, end = None):
 		self.name = name
 		self.start = start
+		self.id = id
 		self.duration = duration
 		if end is not None:
 			self.setend(end)
@@ -44,24 +45,17 @@ class Db:
 			INSERT INTO sessions (name, start, duration)
 			VALUES (?, ?, ?)''',
 			[session.name, session.start, session.duration])
-			return c.lastrowid
+			session.id = c.lastrowid
 
-	def setsession(self, session, id = None):
+	def setsession(self, session):
 		with self.conn:
-			if (id == None):
-				self.conn.execute('''UPDATE sessions SET
-					name = ?, start = ?, duration = ?
-					WHERE id = (SELECT MAX(id) FROM sessions)''',
-					[session.name, session.start, session.duration])
-			else:
-				self.conn.execute('''UPDATE sessions SET
-					name = ?, start = ?, duration = ?
-					WHERE id = ?''',
-					[session.name, session.start, session.duration,
-					id])
+			self.conn.execute('''UPDATE sessions SET
+				name = ?, start = ?, duration = ?
+				WHERE id = ?''',
+				[session.name, session.start, session.duration, session.id])
 
 	def _getsession(self, raw):
-		return WmtSession(raw['name'], raw['start'], raw['duration'])
+		return WmtSession(raw['name'], raw['start'], raw['duration'], raw['id'])
 
 	def getsession(self, id = None):
 		if (id == None):

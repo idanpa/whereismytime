@@ -184,7 +184,7 @@ def main():
 		s = wmt.db.getsession(args.id)
 		if s.duration is None:
 			s.setend(parsetime(args.time))
-			wmt.db.setsession(s, args.id)
+			wmt.db.setsession(s)
 			wmt.db.save()
 			print(s)
 		else:
@@ -199,7 +199,7 @@ def main():
 			s.setend(parsetime(args.endtime))
 		elif not args.duration is None:
 			s.duration = args.duration
-		wmt.db.setsession(s, args.id)
+		wmt.db.setsession(s)
 		wmt.db.save()
 	elif args.command == 'rm':
 		if args.yes or input('Drop session - ' + str(wmt.db.getsession(args.id)) + '? (y/N): ').lower() == 'y':
