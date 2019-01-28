@@ -19,7 +19,9 @@ class OneDriveDb(Db):
 
 		self.authenticate()
 
-		local_file_path = os.path.join(getuserdir(), 'wmtdb.csv')
+		# TODO: maybe better hide it? use temp file or something? maybe we can connect sqlite directly to onedrive callbacks (we can't)
+		# maybe it's faster to check if we have the latest update already downloaded?
+		local_file_path = os.path.join(getuserdir(), 'wmtdb.db')
 		self.db_file_item = self.client.item(drive='me', path=ONEDRIVEDB_WMT_DB_PATH)
 		try:
 			self.db_file_item.download(local_file_path)
