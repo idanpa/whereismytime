@@ -1,5 +1,4 @@
 import os
-import csv
 import sqlite3
 import datetime
 from .common import *
@@ -72,18 +71,23 @@ class Db:
 			else:
 				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', [id])
 
-	def _printsessions(self, conn):
+	def _printsessions(self, sessions):
 		row_format ="{:<4} {:<25} {:<20} {:<6}"
-		print(row_format.format(*[col[0] for col in conn.description]))
-		for row in conn.fetchall():
-			print(row_format.format(*[str(cell) for cell in row]))
+		print(row_format.format('id', 'name', 'start', 'duration'))
+		for s in sessions:
+			if s.duration is None:
+				dur = '(' + str(int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0))) + ')'
+			else:
+				dur = str(s.duration)
+			print(row_format.format(s.id, s.name, str(s.start), dur)) # TODO: add id to sessions?
 
 	def printlastsessions(self, n = 10):
 		c = self.conn.execute('''SELECT * FROM
 					(SELECT * FROM sessions ORDER BY start DESC LIMIT ?)
 					ORDER BY start ASC''',
 					[n])
-		self._printsessions(c)
+		ss = self._getsessions(c)
+		self._printsessions(ss)
 
 	def _getsessions(self, conn):
 		return [self._getsession(row) for row in conn]
