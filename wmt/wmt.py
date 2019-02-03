@@ -3,6 +3,7 @@
 import argparse
 import configparser
 import os
+import sys
 import time
 import datetime
 import dateparser
@@ -13,6 +14,9 @@ from .common import *
 
 DB_SECTION_NAME = 'DB'
 NAMES_DELIMITER = ','
+
+def ehandler(exctype, value, tb):
+	print(str(exctype.__name__) + ': ' + str(value))
 
 # TODO: consider remove this class
 class Wmt:
@@ -97,6 +101,9 @@ def parsetime(time_str):
 		return None
 
 def main():
+	if not __debug__:
+		sys.excepthook = ehandler
+
 	# aux parser for global commands (can be parsed at any position)
 	global_parser = argparse.ArgumentParser(add_help=False)
 	global_parser.add_argument('-v', '--verbose', help='Increase output verbosity', action='store_true')
