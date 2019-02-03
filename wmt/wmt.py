@@ -83,14 +83,18 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 	print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
 def parsetime(time_str):
-	if time_str is None:
+	if time_str and time_str.strip():
+		try:
+			minutes_delta = int(time_str)
+			tm = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
+		except ValueError:
+			tm = dateparser.parse(time_str)
+		if tm:
+			return tm.replace(microsecond = 0)
+		else:
+			raise ValueError('Could not parse \'' + time_str + '\' to datetime')
+	else:
 		return None
-	try:
-		minutes_delta = int(time_str)
-		tm = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
-	except ValueError:
-		tm = dateparser.parse(time_str)
-	return tm.replace(microsecond = 0) if tm is not None else None
 
 def main():
 	# aux parser for global commands (can be parsed at any position)
