@@ -106,21 +106,29 @@ class Db:
 				for subkey, subgroup in groupby(group_tee[1], lambda s: s.name):
 					print(f'\t\t{subkey.split(",",1)[-1]}: {sumdurations(subgroup)/60:.2f}')
 
+	def _reportdays(self, sessions, level):
+		for key, group in groupby(sessions, lambda s: s.start.date()):
+			group_tee = tee(group, 2)
+			print(f'{key}: {sumdurations(group_tee[0])/60:.2f}')
+			self._reportday(group_tee[1], level - 1)
+
 	def reportday(self, day, level = 2):
 		ss = self._getsessions('''SELECT * FROM sessions WHERE start BETWEEN ? AND ?''',
 					[day.replace(hour=0, minute=0, second=0, microsecond=0),
 					 day.replace(hour=23, minute=59, second=59, microsecond=999999)])
-		print(f'total: {sumdurations(ss)/60:.2f}')
+		print(f'total for {day.date()}: {sumdurations(ss)/60:.2f}')
 		self._reportday(ss, level)
 
 	def reportperiod(self, start, end, level = 2):
 		ss = self._getsessions('''SELECT * FROM sessions WHERE start BETWEEN ? AND ?''',
 					[start.replace(hour=0, minute=0, second=0, microsecond=0),
 					 end.replace(hour=23, minute=59, second=59, microsecond=999999)])
-		for key, group in groupby(ss, lambda s: s.start.date()):
-			group_tee = tee(group, 2)
-			print(f'{key}: {sumdurations(group_tee[0])/60:.2f}')
-			self._reportday(group_tee[1], level - 1)
+		self._reportdays(ss, level)
+
+	def reportname(self, name, level = 2):
+		ss = self._getsessions('''SELECT * FROM sessions WHERE name LIKE ?''', [name+'%'])
+		print(f'total for {name}: {sumdurations(ss)/60:.2f}')
+		self._reportdays(ss, level)
 
 	def _getsessions(self, query, parameters):
 		c = self.conn.execute(query, parameters)

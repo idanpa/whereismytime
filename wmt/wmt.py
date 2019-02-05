@@ -144,6 +144,7 @@ def main():
 	# TODO: make this positional argument
 	export_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to export')
 
+	# TODO: make all of these positional argument
 	report_parser = subparsers.add_parser('report', help='Export sessions to csv file', parents=[global_parser])
 	report_subparsers = report_parser.add_subparsers(help='report type', dest='report_type')
 	day_parser = report_subparsers.add_parser('day', help='show specific day sessions')
@@ -153,7 +154,8 @@ def main():
 	period_parser.add_argument('-s', '--start', type=str, required=True, help='start day')
 	last_parser = report_subparsers.add_parser('last', help='show N last sessions')
 	last_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of last sessions to show')
-
+	name_parser = report_subparsers.add_parser('name', help='filter sessions by name')
+	name_parser.add_argument('-n', '--name', type=str, required=True, help='Show sessions with name starting with given string')
 
 	args = parser.parse_args()
 	wmt = Wmt()
@@ -236,6 +238,8 @@ def main():
 			start = parsetime(args.start)
 			end = parsetime(args.end)
 			wmt.db.reportperiod(start, end)
+		elif args.report_type == 'name':
+			wmt.db.reportname(args.name)
 		elif args.report_type == 'last':
 			wmt.db.reportlast(args.number)
 		elif args.report_type is None:
