@@ -2,6 +2,8 @@ import os
 import sqlite3
 import datetime
 from .common import *
+from itertools import groupby
+from itertools import tee
 
 class WmtSession:
 	def __init__(self, name, start, duration = None, id = None, end = None):
@@ -81,20 +83,41 @@ class Db:
 				dur = str(s.duration)
 			print(row_format.format(s.id, s.name, str(s.start), dur)) # TODO: add id to sessions?
 
-	def printlastsessions(self, n = 10):
-		c = self.conn.execute('''SELECT * FROM
+	def reportlast(self, n = 10):
+		ss = self._getsessions('''SELECT * FROM
 					(SELECT * FROM sessions ORDER BY start DESC LIMIT ?)
 					ORDER BY start ASC''',
 					[n])
-		ss = self._getsessions(c)
 		self._printsessions(ss)
 
-	def _getsessions(self, conn):
-		return [self._getsession(row) for row in conn]
+	def _reportday(self, sessions, level):
+		if level == 0:
+			return
+		for key, group in groupby(sessions, lambda s: s.name.split(',')[0]):
+			group_tee = tee(group, 2)
+			print(f'\t{key}: {sum(s.duration for s in group_tee[0] if s.duration)/60:.2f}')
+			if level > 1:
+				for subkey, subgroup in groupby(group_tee[1], lambda s: s.name):
+					print(f'\t\t{subkey.split(",",1)[-1]}: {sum(s.duration for s in subgroup if s.duration)/60:.2f}')
 
-	def getsessions(self, query):
-		# TODO: return iterable of sessions according to given query
-		pass
+	def reportday(self, day, level = 2):
+		ss = self._getsessions('''SELECT * FROM sessions WHERE start BETWEEN ? AND ?''',
+					[day.replace(hour=0, minute=0, second=0, microsecond=0),
+					 day.replace(hour=23, minute=59, second=59, microsecond=999999) ])
+		self._reportday(ss, level)
+
+	def reportperiod(self, start, end, level = 2):
+		ss = self._getsessions('''SELECT * FROM sessions WHERE start BETWEEN ? AND ?''',
+					[start.replace(hour=0, minute=0, second=0, microsecond=0),
+					 end.replace(hour=23, minute=59, second=59, microsecond=999999)])
+		for key, group in groupby(ss, lambda s: s.start.date()):
+			group_tee = tee(group, 2)
+			print(f'{key}: {sum(s.duration for s in group_tee[0] if s.duration)/60:.2f}')
+			self._reportday(group_tee[1], level - 1)
+
+	def _getsessions(self, query, parameters):
+		c = self.conn.execute(query, parameters)
+		return [self._getsession(row) for row in c]
 
 	def is_lastsession_running(self):
 		return self.getsession().duration == None

@@ -124,9 +124,6 @@ def main():
 	end_parser.add_argument('-id', '--id', type=int, default=None, required=False, help='Session id to end, default value would end last session')
 	end_parser.add_argument('-t', '--time', type=str, default='0', required=False, help='Relative time in minutes to start the session in (e.g. -15), or absolutetime (e.g 14:12 or yesterday at 8:10). Defaults to current time')
 
-	log_parser = subparsers.add_parser('log', help='show log of sessions', parents=[global_parser])
-	log_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of sessions to show')
-
 	config_parser = subparsers.add_parser('config', help='configure', parents=[global_parser])
 
 	edit_parser = subparsers.add_parser('edit', help='edit session', parents=[global_parser])
@@ -143,9 +140,20 @@ def main():
 	# TODO: make this positional argument
 	import_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to import')
 
-	expport_parser = subparsers.add_parser('export', help='Export sessions to csv file', parents=[global_parser])
+	export_parser = subparsers.add_parser('export', help='Export sessions to csv file', parents=[global_parser])
 	# TODO: make this positional argument
-	expport_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to export')
+	export_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to export')
+
+	report_parser = subparsers.add_parser('report', help='Export sessions to csv file', parents=[global_parser])
+	report_subparsers = report_parser.add_subparsers(help='report type', dest='report_type')
+	day_parser = report_subparsers.add_parser('day', help='show specific day sessions')
+	day_parser.add_argument('-d', '--day', type=str, default='0', required=False, help='day')
+	period_parser = report_subparsers.add_parser('period', help='show sessions over given period')
+	period_parser.add_argument('-e', '--end', type=str, default='0', required=False, help='start day')
+	period_parser.add_argument('-s', '--start', type=str, required=True, help='start day')
+	last_parser = report_subparsers.add_parser('last', help='show N last sessions')
+	last_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of last sessions to show')
+
 
 	args = parser.parse_args()
 	wmt = Wmt()
@@ -220,8 +228,18 @@ def main():
 		wmt.db.importcsv(args.filepath)
 	elif args.command == 'export':
 		wmt.db.exportcsv(args.filepath)
-	elif args.command == 'log':
-		wmt.db.printlastsessions(args.number)
+	elif args.command == 'report':
+		if args.report_type == 'day':
+			day = parsetime(args.day)
+			wmt.db.reportday(day)
+		elif args.report_type == 'period':
+			start = parsetime(args.start)
+			end = parsetime(args.end)
+			wmt.db.reportperiod(start, end)
+		elif args.report_type == 'last':
+			wmt.db.reportlast(args.number)
+		elif args.report_type is None:
+			wmt.db.reportlast(10)
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 
