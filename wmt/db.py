@@ -27,6 +27,10 @@ class WmtSession:
 			r += str(self.duration) + ' minutes'
 		return r
 
+def sumdurations(sessions):
+	# sum all durations, if duration is empty, consider session as still running:
+	return sum(s.duration if s.duration else int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0)) for s in sessions)
+
 class Db:
 	def __init__(self, localpath):
 		self.localpath = localpath
@@ -97,15 +101,16 @@ class Db:
 			return
 		for key, group in groupby(sessions, lambda s: s.name.split(',')[0]):
 			group_tee = tee(group, 2)
-			print(f'\t{key}: {sum(s.duration for s in group_tee[0] if s.duration)/60:.2f}')
+			print(f'\t{key}: {sumdurations(group_tee[0])/60:.2f}')
 			if level > 1:
 				for subkey, subgroup in groupby(group_tee[1], lambda s: s.name):
-					print(f'\t\t{subkey.split(",",1)[-1]}: {sum(s.duration for s in subgroup if s.duration)/60:.2f}')
+					print(f'\t\t{subkey.split(",",1)[-1]}: {sumdurations(subgroup)/60:.2f}')
 
 	def reportday(self, day, level = 2):
 		ss = self._getsessions('''SELECT * FROM sessions WHERE start BETWEEN ? AND ?''',
 					[day.replace(hour=0, minute=0, second=0, microsecond=0),
-					 day.replace(hour=23, minute=59, second=59, microsecond=999999) ])
+					 day.replace(hour=23, minute=59, second=59, microsecond=999999)])
+		print(f'total: {sumdurations(ss)/60:.2f}')
 		self._reportday(ss, level)
 
 	def reportperiod(self, start, end, level = 2):
@@ -114,7 +119,7 @@ class Db:
 					 end.replace(hour=23, minute=59, second=59, microsecond=999999)])
 		for key, group in groupby(ss, lambda s: s.start.date()):
 			group_tee = tee(group, 2)
-			print(f'{key}: {sum(s.duration for s in group_tee[0] if s.duration)/60:.2f}')
+			print(f'{key}: {sumdurations(group_tee[0])/60:.2f}')
 			self._reportday(group_tee[1], level - 1)
 
 	def _getsessions(self, query, parameters):
