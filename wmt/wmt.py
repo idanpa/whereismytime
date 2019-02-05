@@ -156,6 +156,7 @@ def main():
 	last_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of last sessions to show')
 	name_parser = report_subparsers.add_parser('name', help='filter sessions by name')
 	name_parser.add_argument('-n', '--name', type=str, required=True, help='Show sessions with name starting with given string')
+	report_subparsers.add_parser('running', help='Show all running sessions')
 
 	args = parser.parse_args()
 	wmt = Wmt()
@@ -240,6 +241,8 @@ def main():
 			wmt.db.reportperiod(start, end)
 		elif args.report_type == 'name':
 			wmt.db.reportname(args.name)
+		elif args.report_type == 'running':
+			wmt.db.reportrunning()
 		elif args.report_type == 'last':
 			wmt.db.reportlast(args.number)
 		elif args.report_type is None:

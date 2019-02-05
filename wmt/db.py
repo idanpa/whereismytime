@@ -79,7 +79,7 @@ class Db:
 			else:
 				self.conn.execute('''DELETE FROM sessions WHERE id = ?''', [id])
 
-	def _printsessions(self, sessions):
+	def _printsessionstable(self, sessions):
 		row_format ="{:<4} {:<25} {:<20} {:<6}"
 		print(row_format.format('id', 'name', 'start', 'duration'))
 		for s in sessions:
@@ -94,7 +94,7 @@ class Db:
 					(SELECT * FROM sessions ORDER BY start DESC LIMIT ?)
 					ORDER BY start ASC''',
 					[n])
-		self._printsessions(ss)
+		self._printsessionstable(ss)
 
 	def _reportday(self, sessions, level):
 		if level == 0:
@@ -130,12 +130,13 @@ class Db:
 		print(f'total for {name}: {sumdurations(ss)/60:.2f}')
 		self._reportdays(ss, level)
 
+	def reportrunning(self, level = 2):
+		ss = self._getsessions('''SELECT * FROM sessions WHERE duration IS NULL''', [])
+		self._printsessionstable(ss)
+
 	def _getsessions(self, query, parameters):
 		c = self.conn.execute(query, parameters)
 		return [self._getsession(row) for row in c]
-
-	def is_lastsession_running(self):
-		return self.getsession().duration == None
 
 	def save(self):
 		# TODO: call commit() here instead of calling using with self.conn:
