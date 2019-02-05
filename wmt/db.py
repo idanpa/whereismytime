@@ -20,7 +20,9 @@ class WmtSession:
 	def __str__(self):
 		r = self.name + ' ' + str(self.start) + ' '
 		if self.duration is None:
-			r += '(' + str(round((datetime.datetime.now() - self.start).total_seconds() / 60.0)) + ' minutes)'
+			duration = round((datetime.datetime.now() - self.start).total_seconds() / 60.0)
+			if duration > 0:
+				r += '(' + str(duration) + ' minutes)'
 		else:
 			r += str(self.duration) + ' minutes'
 		return r
