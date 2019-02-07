@@ -29,7 +29,7 @@ class WmtSession:
 
 def sumdurations(sessions):
 	# sum all durations, if duration is empty, consider session as still running:
-	return sum(s.duration if s.duration else int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0)) for s in sessions)
+	return sum(s.duration if s.duration is not None else int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0)) for s in sessions)
 
 class Db:
 	def __init__(self, localpath):
