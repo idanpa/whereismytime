@@ -245,7 +245,7 @@ def main():
 		elif args.report_type == 'last':
 			wmt.db.reportlast(args.number)
 		elif args.report_type is None:
-			wmt.db.reportlast(10)
+			wmt.db.reportday(datetime.datetime.now())
 	elif args.command == 'config':
 		wmt.getconfigfromuser()
 
