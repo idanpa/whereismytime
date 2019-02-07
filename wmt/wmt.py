@@ -137,25 +137,21 @@ def main():
 	del_parser.add_argument('-id', '--id', type=int, default=None, required=False, help='Session id to be deleted, default value would delete last session')
 
 	import_parser = subparsers.add_parser('import', help='Import sessions from csv file', parents=[global_parser])
-	# TODO: make this positional argument
-	import_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to import')
+	import_parser.add_argument('filepath', type=str, help='csv file path to import')
 
 	export_parser = subparsers.add_parser('export', help='Export sessions to csv file', parents=[global_parser])
-	# TODO: make this positional argument
-	export_parser.add_argument('-f', '--filepath', type=str, default=None, required=True, help='csv file path to export')
+	export_parser.add_argument('filepath', type=str, help='csv file path to export')
 
-	# TODO: make all of these positional argument
 	report_parser = subparsers.add_parser('report', help='Export sessions to csv file', parents=[global_parser])
 	report_subparsers = report_parser.add_subparsers(help='report type', dest='report_type')
 	day_parser = report_subparsers.add_parser('day', help='show specific day sessions')
-	day_parser.add_argument('-d', '--day', type=str, default='0', required=False, help='day')
+	day_parser.add_argument('day', type=str, default='0', nargs='?', help='day')
 	period_parser = report_subparsers.add_parser('period', help='show sessions over given period')
-	period_parser.add_argument('-e', '--end', type=str, default='0', required=False, help='start day')
-	period_parser.add_argument('-s', '--start', type=str, required=True, help='start day')
+	period_parser.add_argument('period', type=str, nargs='+', help='defined by 2 strings of times, if only one string supplied would consder until current time')
 	last_parser = report_subparsers.add_parser('last', help='show N last sessions')
-	last_parser.add_argument('-n', '--number', type=int, default=10, required=False, help='Number of last sessions to show')
+	last_parser.add_argument('number', type=int, default=10, nargs='?', help='Number of last sessions to show')
 	name_parser = report_subparsers.add_parser('name', help='filter sessions by name')
-	name_parser.add_argument('-n', '--name', type=str, required=True, help='Show sessions with name starting with given string')
+	name_parser.add_argument('name', type=str, help='Show sessions with name starting with given string')
 	report_subparsers.add_parser('running', help='Show all running sessions')
 
 	args = parser.parse_args()
@@ -236,8 +232,11 @@ def main():
 			day = parsetime(args.day)
 			wmt.db.reportday(day)
 		elif args.report_type == 'period':
-			start = parsetime(args.start)
-			end = parsetime(args.end)
+			start = parsetime(args.period[0])
+			if len(args.period) > 1:
+				end = parsetime(args.period[1])
+			else:
+				end = datetime.datetime.now()
 			wmt.db.reportperiod(start, end)
 		elif args.report_type == 'name':
 			wmt.db.reportname(args.name)
