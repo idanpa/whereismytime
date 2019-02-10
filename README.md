@@ -32,3 +32,4 @@ project x, task 2 ended (45 minutes)
 
 Time arguments may be relative time in minutes (e.g. `-4`) or human readable time (and date) which will be parsed by [dateparser](https://dateparser.readthedocs.io).
 
+For more information see help.
