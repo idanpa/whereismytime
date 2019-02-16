@@ -160,7 +160,7 @@ def main():
 	# make a guess if no command was supplied:
 	if args.command is None:
 		# TODO: also support start/end etc for the case of the start
-		if wmt.is_session_running():
+		if wmt.db.getsession().duration == None:
 			args = parser.parse_args(args = ['end'])
 		else:
 			args = parser.parse_args(args = ['start'])
