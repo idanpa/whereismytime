@@ -15,7 +15,7 @@ from .common import *
 DB_SECTION_NAME = 'DB'
 NAMES_DELIMITER = ','
 
-def ehandler(exctype, value, tb):
+def errorhandler(exctype, value, tb):
 	print(str(exctype.__name__) + ': ' + str(value))
 
 # TODO: consider remove this class
@@ -88,7 +88,7 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 def main():
 	if not __debug__:
-		sys.excepthook = ehandler
+		sys.excepthook = errorhandler
 
 	# aux parser for global commands (can be parsed at any position)
 	global_parser = argparse.ArgumentParser(add_help=False)
