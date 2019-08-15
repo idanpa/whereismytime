@@ -86,20 +86,6 @@ def printprogressbar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 	bar = fill * filledLength + '-' * (length - filledLength)
 	print('\r%s |%s| %s%% %s        ' % (prefix, bar, percent, suffix), end='\r')
 
-def parsetime(time_str):
-	if time_str and time_str.strip():
-		try:
-			minutes_delta = int(time_str)
-			tm = datetime.datetime.now() + datetime.timedelta(minutes = minutes_delta)
-		except ValueError:
-			tm = dateparser.parse(time_str)
-		if tm:
-			return tm.replace(microsecond = 0)
-		else:
-			raise ValueError('Could not parse \'' + time_str + '\' to datetime')
-	else:
-		return None
-
 def main():
 	if not __debug__:
 		sys.excepthook = ehandler
