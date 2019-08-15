@@ -2,7 +2,6 @@ import os
 import onedrivesdk
 from onedrivesdk.helpers import GetAuthCodeServer
 from .common import *
-from .settings import *
 from .db import Db
 
 redirect_uri = 'http://localhost:8083/'
