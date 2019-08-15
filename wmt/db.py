@@ -28,7 +28,7 @@ class WmtSession:
 		return r
 
 def printduration(duration):
-	hours, minutes = divmod(duration, 60)
+	hours, minutes = divmod(int(duration), 60)
 	return f'{hours}:{minutes:02d}'
 
 def printdurationssum(sessions):
