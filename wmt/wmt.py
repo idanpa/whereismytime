@@ -4,12 +4,9 @@ import argparse
 import configparser
 import os
 import sys
-import time
+from time import sleep
 import datetime
-import dateparser
-from .db import Db
-from .db import WmtSession
-from .onedrivedb import OneDriveDb
+from .db import Db, WmtSession
 from .common import *
 
 DB_SECTION_NAME = 'DB'
@@ -76,6 +73,7 @@ class Wmt:
 		if db_type_code == 1:
 			self.db = Db(self.config[DB_SECTION_NAME]['DataBaseFile'])
 		elif db_type_code == 2:
+			from .onedrivedb import OneDriveDb
 			self.db = OneDriveDb()
 		else:
 			raise Exception('Not supported DB type: ' + str(db_type_code))
@@ -169,7 +167,7 @@ def main():
 					hours, remainder = divmod(abs(elapsed_secs), 3600)
 					minutes, seconds = divmod(remainder, 60)
 					elapsed_str = 'Elapsed {}{:02}:{:02}:{:02}         '.format('-' if elapsed_secs < 0 else '', int(hours), int(minutes), int(seconds))
-					time.sleep(0.2)
+					sleep(0.2)
 					if args.duration is None:
 						print('\r' + elapsed_str, end='\r')
 					else:
