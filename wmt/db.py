@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import datetime
+import math
 from .common import *
 from itertools import groupby
 from itertools import tee
@@ -21,15 +22,18 @@ class WmtSession:
 		r = self.name + ' ' + str(self.start) + ' '
 		if self.duration is None:
 			duration = round((datetime.datetime.now() - self.start).total_seconds() / 60.0)
-			if duration > 0:
-				r += '(' + str(duration) + ' minutes)'
+			r += f'running ({printduration(duration)})'
 		else:
-			r += str(self.duration) + ' minutes'
+			r += printduration(self.duration)
 		return r
 
-def sumdurations(sessions):
+def printduration(duration):
+	hours, minutes = divmod(duration, 60)
+	return f'{hours}:{minutes:02d}'
+
+def printdurationssum(sessions):
 	# sum all durations, if duration is empty, consider session as still running:
-	return sum(s.duration if s.duration is not None else int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0)) for s in sessions)
+	return printduration(sum(s.duration if s.duration is not None else int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0)) for s in sessions)/60.)
 
 class Db:
 	def __init__(self, localpath):
@@ -84,9 +88,9 @@ class Db:
 		print(row_format.format('id', 'name', 'start', 'duration'))
 		for s in sessions:
 			if s.duration is None:
-				dur = '(' + str(int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0))) + ')'
+				dur = '(' + printduration(int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0))) + ')'
 			else:
-				dur = str(s.duration)
+				dur = printduration(s.duration)
 			print(row_format.format(s.id, s.name, str(s.start), dur)) # TODO: add id to sessions?
 
 	def reportlast(self, n = 10):
@@ -101,22 +105,22 @@ class Db:
 			return
 		for key, group in groupby(sessions, lambda s: s.name.split(',')[0]):
 			group_tee = tee(group, 2)
-			print(f'\t{key}: {sumdurations(group_tee[0])/60:.2f}')
+			print(f'\t{key}: {printdurationssum(group_tee[0])}')
 			if level > 1:
 				for subkey, subgroup in groupby(group_tee[1], lambda s: s.name):
-					print(f'\t\t{subkey.split(",",1)[-1]}: {sumdurations(subgroup)/60:.2f}')
+					print(f'\t\t{subkey.split(",",1)[-1]}: {printdurationssum(subgroup)}')
 
 	def _reportdays(self, sessions, level):
 		for key, group in groupby(sessions, lambda s: s.start.date()):
 			group_tee = tee(group, 2)
-			print(f'{key}: {sumdurations(group_tee[0])/60:.2f}')
+			print(f'{key}: {printdurationssum(group_tee[0])}')
 			self._reportday(group_tee[1], level - 1)
 
 	def reportday(self, day, level = 2):
 		ss = self._getsessions('''SELECT * FROM sessions WHERE start BETWEEN ? AND ?''',
 					[day.replace(hour=0, minute=0, second=0, microsecond=0),
 					 day.replace(hour=23, minute=59, second=59, microsecond=999999)])
-		print(f'total for {day.date()}: {sumdurations(ss)/60:.2f}')
+		print(f'total for {day.date()}: {printdurationssum(ss)}')
 		self._reportday(ss, level)
 
 	def reportperiod(self, start, end, level = 2):
@@ -127,7 +131,7 @@ class Db:
 
 	def reportname(self, name, level = 2):
 		ss = self._getsessions('''SELECT * FROM sessions WHERE name LIKE ?''', [name+'%'])
-		print(f'total for {name}: {sumdurations(ss)/60:.2f}')
+		print(f'total for {name}: {printdurationssum(ss)}')
 		self._reportdays(ss, level)
 
 	def reportrunning(self, level = 2):
