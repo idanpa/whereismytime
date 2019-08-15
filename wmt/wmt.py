@@ -193,6 +193,7 @@ def main():
 			print('Session was already ended.')
 	elif args.command == 'edit':
 		s = wmt.db.getsession(args.id)
+		print(f'old: {s}')
 		if not args.name is None:
 			s.name = args.name
 		if not args.starttime is None:
@@ -203,6 +204,7 @@ def main():
 			s.duration = args.duration
 		wmt.db.setsession(s)
 		wmt.db.save()
+		print(f'new: {s}')
 	elif args.command == 'rm':
 		if args.yes or input('Drop session - ' + str(wmt.db.getsession(args.id)) + '? (y/N): ').lower() == 'y':
 			wmt.db.dropsession(args.id)
