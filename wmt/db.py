@@ -33,7 +33,13 @@ def printduration(duration):
 
 def printdurationssum(sessions):
 	# sum all durations, if duration is empty, consider session as still running:
-	return printduration(sum(s.duration if s.duration is not None else int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0)) for s in sessions)/60.)
+	duration = 0
+	for s in sessions:
+		if s.duration is None:
+			duration += int(round((datetime.datetime.now() - s.start).total_seconds() / 60.0))
+		else:
+			duration += s.duration
+	return printduration(duration)
 
 class Db:
 	def __init__(self, localpath):
