@@ -111,10 +111,10 @@ class Db:
 			return
 		for key, group in groupby(sessions, lambda s: s.name.split(',')[0]):
 			group_tee = tee(group, 2)
-			print(f'\t{key}: {printdurationssum(group_tee[0])}')
+			print(f'  {key}: {printdurationssum(group_tee[0])}')
 			if level > 1:
 				for subkey, subgroup in groupby(group_tee[1], lambda s: s.name):
-					print(f'\t\t{subkey.split(",",1)[-1]}: {printdurationssum(subgroup)}')
+					print(f'    {subkey.split(",",1)[-1]}: {printdurationssum(subgroup)}')
 
 	def _reportdays(self, sessions, level):
 		for key, group in groupby(sessions, lambda s: s.start.date()):
