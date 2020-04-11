@@ -28,8 +28,12 @@ class WmtSession:
 		return r
 
 def printduration(duration):
-	hours, minutes = divmod(int(duration), 60)
-	return f'{hours}:{minutes:02d}'
+	hours, minutes = divmod(abs(duration), 60)
+
+	if duration >= 0:
+		return f'{hours}:{minutes:02d}'
+	else:
+		return f'-{hours}:{minutes:02d}'
 
 def printdurationssum(sessions):
 	# sum all durations, if duration is empty, consider session as still running:
