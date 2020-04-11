@@ -14,8 +14,8 @@ setuptools.setup(
     url="https://github.com/idanpa/whereismytime",
     packages=setuptools.find_packages(),
     install_requires=[
-        'onedrivesdk',
-	'dateparser',
+        'onedrivesdk @ git+https://github.com/OneDrive/onedrive-sdk-python@master',
+	    'dateparser',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
