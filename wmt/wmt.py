@@ -41,12 +41,20 @@ class Wmt:
 
 		self.config.set(DB_SECTION_NAME, 'DataBaseType', db_type_code)
 		if db_type_code == 1:
-			default_local_file_path = os.path.join(getuserdir(), 'wmt.db')
-			local_file_path = input("Please write local DB path, or leave empty to use default:")
-			if local_file_path == '':
-				local_file_path = default_local_file_path
-			print('DB file is in ' + local_file_path)
-			self.config.set(DB_SECTION_NAME, 'DataBaseFile', local_file_path)
+			while True:
+				try:
+					default_local_file_path = os.path.join(getuserdir(), 'wmt.db')
+					local_file_path = input(
+						'Please write local DB path, or leave empty to use default ({}):'.format(default_local_file_path))
+					if local_file_path == '':
+						local_file_path = default_local_file_path
+					with open(local_file_path, 'a') as file:
+						pass
+					print('DB file is in ' + local_file_path)
+					self.config.set(DB_SECTION_NAME, 'DataBaseFile', local_file_path)
+					break
+				except Exception as e:
+					print(e)
 
 		with open(self.config_path, 'w') as f:
 			self.config.write(f)
@@ -143,7 +151,7 @@ def main():
 
 	# make a guess if no command was supplied:
 	if args.command is None:
-		# TODO: also support start/end etc for the case of the start
+		# TODO: also support start/end args etc for the case of the start?
 		if wmt.db.getsession().duration == None:
 			args = parser.parse_args(args = ['end'])
 		else:
