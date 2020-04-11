@@ -217,6 +217,8 @@ def main():
 		if args.yes or input('Drop session - ' + str(wmt.db.getsession(args.id)) + '? (y/N): ').lower() == 'y':
 			wmt.db.dropsession(args.id)
 			print('Session dropped')
+		else:
+			print('Skipped')
 	elif args.command == 'import':
 		wmt.db.importcsv(args.filepath)
 	elif args.command == 'export':
